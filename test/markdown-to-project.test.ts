@@ -185,8 +185,9 @@ describe("project-to-markdown", function () {
 describe("sync todo list example", function () {
   // Increase timeout for tests
   this.timeout(10000);
+  
   it("should sync todo-list-example.md to project", async function () {
-    // Skip test if no token or project id
+    // Skip test if no token or project id or in CI environment
     if (!TOKEN || !PROJECT_ID || process.env.CI) {
       this.skip();
       return;

@@ -1,0 +1,22 @@
+{
+  "name": "github-projects-md-sync-items-test",
+  "version": "1.0.0",
+  "description": "Test project to md sync functionality",
+  "scripts": {
+    "test": "mocha -r ts-node/register examples/items.test.ts",
+    "sync": "ts-node examples/example-project-to-md.ts",
+    "sync:custom": "ts-node examples/example-project-to-md.ts examples/items"
+  },
+  "dependencies": {
+    "@octokit/graphql": "^7.0.1",
+    "dotenv": "^16.3.1",
+    "markdown-function": "^0.0.6"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.4.5",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  }
+}

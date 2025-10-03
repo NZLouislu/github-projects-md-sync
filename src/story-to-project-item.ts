@@ -444,6 +444,8 @@ async function createProjectItem(projectId: string, content: string, status: str
  * Update the status field of a project item
  */
 async function updateItemStatus(projectId: string, itemId: string, status: string, token: string): Promise<void> {
+  console.log(`Attempting to update status for item ${itemId} to: ${status}`);
+  
   // First, we need to get the project's field IDs
   const projectFieldsQuery = `
     query($projectId: ID!) {
@@ -580,7 +582,7 @@ async function updateItemStatus(projectId: string, itemId: string, status: strin
 /**
  * Main function to sync stories to project board
  */
-export async function syncStoriesToProject(): Promise<void> {
+export async function syncStoriesToProject(storiesDirPath?: string): Promise<void> {
   const projectId = process.env.PROJECT_ID;
   const token = process.env.GITHUB_TOKEN;
   
@@ -590,7 +592,8 @@ export async function syncStoriesToProject(): Promise<void> {
   
   try {
     // Read all story files
-    const storiesDir = path.join(process.cwd(), "stories");
+    // Use provided path, or default to "stories" directory relative to current working directory
+    const storiesDir = storiesDirPath || path.join(process.cwd(), "stories");
     const files = await fs.readdir(storiesDir);
     
     // Process each story file
@@ -626,7 +629,9 @@ export async function syncStoriesToProject(): Promise<void> {
 
 // Run the sync if this file is executed directly
 if (require.main === module) {
-  syncStoriesToProject().catch(error => {
+  // Allow passing custom stories directory as command line argument
+  const storiesDir = process.argv[2];
+  syncStoriesToProject(storiesDir).catch(error => {
     console.error("Sync failed:", error);
     process.exit(1);
   });

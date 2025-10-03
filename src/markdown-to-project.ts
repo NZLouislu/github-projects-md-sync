@@ -5,7 +5,7 @@ import remarkStringify from "remark-stringify";
 import { selectAll } from "unist-util-select";
 import { debug } from "@deps/debug";
 import { graphql } from "@octokit/graphql";
-import { ProjectBoardItem, fetchProjectBoard } from "./project-to-stories";
+import { fetchProjectBoard, ProjectBoardItem } from "./project-to-stories";
 import stripIndent from "strip-indent";
 
 const md = unified().use(parse).use(gfm).use(remarkStringify, {

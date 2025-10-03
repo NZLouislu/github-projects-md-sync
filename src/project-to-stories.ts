@@ -221,13 +221,17 @@ export async function fetchProjectBoard(options: FetchProjectBoardOptions): Prom
 export async function generateStoriesFromProject(options: { 
     projectId: string; 
     token: string;
+    storiesDirPath?: string;  // Add optional custom path parameter
 }): Promise<void> {
     try {
         // Fetch project board data
         const projectBoard = await fetchProjectBoard(options);
         
+        // Use custom stories directory if provided, otherwise default to "stories" 
+        // directory relative to current working directory
+        const storiesDir = options.storiesDirPath || path.join(process.cwd(), "stories");
+        
         // Create stories directory if it doesn't exist
-        const storiesDir = path.join(process.cwd(), "stories");
         try {
             await fs.access(storiesDir);
         } catch {
@@ -248,11 +252,39 @@ export async function generateStoriesFromProject(options: {
                 const storyContent = createStoryContent(item, column.name);
                 
                 try {
-                    // Only write if file doesn't already exist
+                    // Check if file already exists and read its content
+                    let existingContent = null;
                     try {
-                        await fs.access(filePath);
-                        console.log(`File already exists, skipping: ${fileName}`);
-                    } catch {
+                        existingContent = await fs.readFile(filePath, 'utf8');
+                    } catch (err) {
+                        // File doesn't exist, which is fine
+                    }
+                    
+                    // If file exists, check if content has changed (status or description)
+                    if (existingContent) {
+                        // Extract status from existing file
+                        const existingStatusMatch = existingContent.match(/### Status\s*\n\s*([^\n]+)/i);
+                        const existingStatus = existingStatusMatch ? existingStatusMatch[1].trim() : null;
+                        
+                        // Extract description from existing file
+                        const existingDescriptionMatch = existingContent.match(/### Description\s*\n\s*([^\n]+)/i);
+                        const existingDescription = existingDescriptionMatch ? existingDescriptionMatch[1].trim() : null;
+                        
+                        // Get the new status and description
+                        const newStatus = item.status || column.name;
+                        const newDescription = item.body || "No description provided.";
+                        
+                        // If status or description has changed, update the file with new content
+                        if (existingStatus !== newStatus || existingDescription !== newDescription) {
+                            // Update the content with new status and description
+                            const updatedContent = updateStoryContent(existingContent, newStatus, newDescription);
+                            await fs.writeFile(filePath, updatedContent, "utf8");
+                            console.log(`Updated content in story file: ${filePath}`);
+                        } else {
+                            console.log(`File already exists with same content, skipping: ${fileName}`);
+                        }
+                    } else {
+                        // File doesn't exist, create it
                         await fs.writeFile(filePath, storyContent, "utf8");
                         console.log(`Created story file: ${filePath}`);
                     }
@@ -267,6 +299,30 @@ export async function generateStoriesFromProject(options: {
         console.error("Failed to generate stories from project:", error);
         throw error;
     }
+}
+
+/**
+ * Update the content in an existing story file
+ */
+export function updateStoryContent(content: string, newStatus: string, newDescription: string): string {
+    let updatedContent = content;
+    
+    // Update status
+    updatedContent = updatedContent.replace(/(### Status\s*\n\s*)([^\n]+)/i, `$1${newStatus}`);
+    
+    // Update description - handle multiline descriptions
+    const descriptionRegex = /(### Description\s*\n\s*)([\s\S]*?)(\n###|$)/i;
+    const descriptionMatch = updatedContent.match(descriptionRegex);
+    
+    if (descriptionMatch) {
+        // Replace the description section with new description
+        updatedContent = updatedContent.replace(
+            descriptionRegex, 
+            `$1${newDescription}$3`
+        );
+    }
+    
+    return updatedContent;
 }
 
 /**
@@ -308,7 +364,8 @@ No description provided.
     }
     
     // Only add standard sections if they're not already in the body
-    if (!item.body || !item.body.includes("Acceptance Criteria")) {
+    // Fix: Only add Acceptance Criteria if body doesn't contain it
+    if (!item.body || (!item.body.includes("Acceptance Criteria") && !item.body.includes("### Acceptance Criteria"))) {
         content += `### Acceptance Criteria
 
 - [ ] Criteria 1
@@ -317,7 +374,8 @@ No description provided.
 `;
     }
     
-    if (!item.body || !item.body.includes("Technical Implementation")) {
+    // Fix: Only add Technical Implementation if body doesn't contain it
+    if (!item.body || (!item.body.includes("Technical Implementation") && !item.body.includes("### Technical Implementation"))) {
         content += `### Technical Implementation
 
 - Implementation details
@@ -405,7 +463,14 @@ if (require.main === module) {
         process.exit(1);
     }
     
-    generateStoriesFromProject({ projectId, token })
+    // Allow passing custom directory as command line argument
+    const storiesDir = process.argv[2];
+    
+    generateStoriesFromProject({ 
+        projectId, 
+        token,
+        storiesDirPath: storiesDir  // Pass custom path if provided
+    })
         .catch(error => {
             console.error("Script failed:", error);
             process.exit(1);

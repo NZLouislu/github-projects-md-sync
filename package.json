@@ -1,40 +1,42 @@
 {
   "name": "github-projects-md-sync",
   "version": "0.1.0",
-  "description": "Sync GitHub Projects V2 with Markdown stories",
+  "description": "A tool to sync GitHub Project V2 items with local markdown files",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "mocha -r ts-node/register test/**/*.test.ts",
     "lint": "prettier --check .",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "example": "ts-node examples/examples-integration.ts",
+    "example:test": "mocha -r ts-node/register examples/example-usage.test.ts",
+    "example:sync:test": "mocha -r ts-node/register examples/sync-md-to-project.test.ts",
+    "example:project:test": "mocha -r ts-node/register examples/project-to-stories-sync.test.ts"
   },
+  "keywords": [
+    "github",
+    "project",
+    "markdown",
+    "sync"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
-    "@deps/debug": "^1.1.0",
-    "@octokit/graphql": "^9.0.2",
-    "dotenv": "^17.2.3",
-    "markdown-function": "^2.0.0",
-    "remark-gfm": "^4.0.1",
-    "remark-parse": "^11.0.0",
-    "remark-stringify": "^11.0.0",
-    "strip-indent": "^4.1.0",
-    "ts-dedent": "^2.2.0",
-    "unified": "^11.0.5",
-    "unist-util-select": "^5.1.0",
-    "unist-util-visit-parents": "^6.0.1"
+    "@octokit/graphql": "^7.0.1",
+    "dotenv": "^16.3.1",
+    "markdown-function": "^0.0.6"
   },
   "devDependencies": {
-    "@octokit/graphql-schema": "^15.26.0",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^24.6.2",
-    "lint-staged": "^16.2.3",
-    "mocha": "^11.7.4",
-    "prettier": "^3.6.2",
-    "rimraf": "^6.0.1",
-    "ts-node": "^10.9.2",
-    "ts-node-test-register": "^10.0.0",
-    "typescript": "^5.9.3"
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.4.5",
+    "mocha": "^10.2.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
   },
-  "license": "MIT"
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
