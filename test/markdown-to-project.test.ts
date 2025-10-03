@@ -193,7 +193,7 @@ describe("sync todo list example", function () {
     }
 
     // Read the todo list example file
-    const filePath = path.join(__dirname, "../todo-list-example.md");
+    const filePath = path.join(__dirname, "../stories/todo-list-example.md");
     const markdownContent = await fs.readFile(filePath, "utf8");
 
     // Sync to project

@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { graphql } from "@octokit/graphql";
-import { extractStoryId } from "./utils/storyId";
+import { extractStoryId } from "./utils/story-id";
 
 interface Story {
   title: string;
@@ -597,6 +597,14 @@ export async function syncStoriesToProject(): Promise<void> {
     for (const file of files) {
       if (file.endsWith(".md")) {
         const filePath = path.join(storiesDir, file);
+        
+        // Skip files that don't follow the story format (like todo-list-example.md)
+        const fileContent = await fs.readFile(filePath, "utf8");
+        if (!fileContent.startsWith("## Story: ")) {
+          console.log(`Skipping ${file} as it doesn't follow the story format`);
+          continue;
+        }
+        
         const story = await parseStoryFile(filePath);
         
         // Create or update project item

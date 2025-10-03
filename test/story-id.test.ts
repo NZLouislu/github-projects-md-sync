@@ -1,4 +1,4 @@
-import { extractStoryId, normalizeKey } from "../src/utils/storyId";
+import { extractStoryId, normalizeKey } from "../src/utils/story-id";
 import assert from "assert";
 
 describe("storyId utils", function () {

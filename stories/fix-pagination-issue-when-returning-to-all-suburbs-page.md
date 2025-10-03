@@ -4,9 +4,7 @@
 nzlouis-property-ai-property-fix-pagination-issue
 
 ### Status
-
 In Progress
-
 
 ### Description
 Users experience issues with pagination when navigating away from and back to the "All suburbs" page. The pagination state needs to be properly maintained to allow seamless continuation of data loading.
@@ -35,4 +33,3 @@ Users experience issues with pagination when navigating away from and back to th
 ### Technical Implementation
 
 - Implementation details
-

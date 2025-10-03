@@ -603,12 +603,34 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
                 if (!columnItem.id || columnItem.id.startsWith('DI_lAHOBFSaJM4BEcZZzgJ0')) {
                     continue;
                 }
-                if (syncTaskItem.url === columnItem.url) {
+                
+                // Debug logging to see what we're comparing
+                // console.log("Comparing:", { 
+                //     syncTaskItemTitle: `"${syncTaskItem.title}"`,
+                //     columnItemTitle: `"${columnItem.title}"`,
+                //     syncTaskItemUrl: syncTaskItem.url,
+                //     columnItemUrl: columnItem.url,
+                //     titleMatch: syncTaskItem.title === columnItem.title,
+                //     trimmedTitleMatch: syncTaskItem.title.trim() === columnItem.title.trim()
+                // });
+                
+                // Check by storyId first if available
+                if (columnItem.storyId && syncTaskItem.url && syncTaskItem.url.includes(columnItem.storyId)) {
                     return {
                         item: columnItem,
                         columnId: column.id
                     };
-                } else if (syncTaskItem.title === columnItem.title) {
+                }
+                
+                // Fallback to URL matching
+                if (syncTaskItem.url && columnItem.url && syncTaskItem.url === columnItem.url) {
+                    return {
+                        item: columnItem,
+                        columnId: column.id
+                    };
+                } 
+                // Fallback to title matching with trimmed comparison
+                else if (syncTaskItem.title.trim() === columnItem.title.trim()) {
                     return {
                         item: columnItem,
                         columnId: column.id
@@ -622,9 +644,16 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
     for (const todoItem of todoItems) {
         const projectItem = findProjectTodoItem(todoItem);
         
+        if (projectItem) {
+            console.log(`Found existing item for "${todoItem.title}": ${projectItem.item.id}`);
+        } else {
+            console.log(`No existing item found for "${todoItem.title}"`);
+        }
+        
         // Add new Draft Issue for V2
         if (!projectItem && options.projectId) {
-            if (options.includesNote && todoItem.state === "OPEN") {
+            console.log(`Creating new draft issue for "${todoItem.title}"`);
+            if (options.includesNote && (todoItem.state === "OPEN" || todoItem.state === "CLOSED")) {
                 // Create new draft issue for both Note and ISSUE_PR types
                 // Create new draft issue
                 needToUpdateItems.push({
@@ -680,7 +709,9 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
         if (projectItem && options.projectId) {
             if (options.includesNote && todoItem.type === "Note") {
                 const isChangedContent = todoItem.body.trim() !== projectItem.item.body.trim();
-                if (isChangedContent) {
+                const needToUpdateState = todoItem.state !== projectItem.item.state;
+                
+                if (isChangedContent || needToUpdateState) {
                     needToUpdateItems.push({
                         __typename: "UpdateDraftIssue",
                         id: projectItem.item.id,
