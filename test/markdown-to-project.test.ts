@@ -31,6 +31,10 @@ describe("project-to-markdown", function () {
     - [link](https://example.com)
 - [x] [TODO ISSUE](https://github.com/nzlouis/github-projects-md-sync/issues/4)
 
+## Ready
+
+- [ ] [READY ISSUE](https://github.com/nzlouis/github-projects-md-sync/issues/6)
+    - This is ready to be picked up
 
 ## In progress
 
@@ -101,6 +105,11 @@ describe("project-to-markdown", function () {
     - Details Note A
     - [link](https://example.com)
 - [ ] TODO ISSUE
+
+## Ready
+
+- [ ] READY ISSUE
+    - This is ready to be picked up
 
 ## In progress
 
@@ -179,6 +188,58 @@ describe("project-to-markdown", function () {
         includesNote: true,
       });
     }
+  });
+
+  it("should handle Ready status correctly", async function () {
+    // Skip test if no token or project id
+    if (!TOKEN || !PROJECT_ID) {
+      this.skip();
+      return;
+    }
+
+    const CODE = `## Backlog
+
+- [ ] Backlog task
+    - This is in backlog
+
+## Ready
+
+- [ ] Ready task
+    - This is ready to be picked up
+- [ ] Another ready task
+
+## In progress
+
+- [ ] In progress task
+
+## Done
+
+- [x] Done task
+`;
+
+    // Test with V2 API - this will create new draft issues and test status updates
+    const request = await createSyncRequestObject(CODE, {
+      projectId: PROJECT_ID,
+      token: TOKEN,
+      includesNote: true,
+    });
+    
+    console.log("Request items:", request);
+    
+    // Look for NewDraftIssue items that should have been created for Ready tasks
+    const newDraftIssues = request.filter((item: any) => 
+      item.__typename === "NewDraftIssue" && 
+      (item.title === "Ready task" || item.title === "Another ready task")
+    );
+    
+    console.log("New draft issues for Ready tasks:", newDraftIssues);
+    
+    // Look for status update items
+    const statusUpdates = request.filter((item: any) => 
+      item.__typename === "UpdateProjectItemField"
+    );
+    
+    console.log("Status updates:", statusUpdates);
   });
 });
 

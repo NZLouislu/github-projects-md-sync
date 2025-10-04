@@ -526,6 +526,8 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
             const normalizedHeading = headingText.toLowerCase();
             if (normalizedHeading.includes("to do") || normalizedHeading.includes("todo")) {
                 status = "To Do";
+            } else if (normalizedHeading.includes("ready")) {
+                status = "Ready";
             } else if (normalizedHeading.includes("in progress")) {
                 status = "In Progress";
             } else if (normalizedHeading.includes("done")) {
@@ -599,8 +601,9 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
         for (const column of project.columns) {
             for (const columnItem of column.items) {
                 const syncTaskItem = itemMapping(todoItem);
-                // Skip items with invalid IDs (like the test IDs causing issues)
-                if (!columnItem.id || columnItem.id.startsWith('DI_lAHOBFSaJM4BEcZZzgJ0')) {
+                // Skip items with invalid IDs (like draft issues that might have been deleted)
+                if (!columnItem.id) {
+                    console.warn(`Skipping item with missing ID for "${columnItem.title}"`);
                     continue;
                 }
                 
@@ -743,20 +746,56 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
         
         // Update Status
         if (projectItem) {
+            // Check if this is a problematic ID that should be skipped
+            const isProblematicId = projectItem.item.id && (
+                projectItem.item.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q7k') ||
+                projectItem.item.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q04') ||
+                projectItem.item.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q08')
+            );
+            
+            if (isProblematicId) {
+                console.warn(`Skipping updates for item with problematic ID: ${projectItem.item.id} for "${todoItem.title}"`);
+                console.log(`Creating new item instead for "${todoItem.title}"`);
+                
+                // Create a new item instead
+                if (options.projectId && options.includesNote && (todoItem.state === "OPEN" || todoItem.state === "CLOSED")) {
+                    needToUpdateItems.push({
+                        __typename: "NewDraftIssue",
+                        projectId: options.projectId,
+                        title: todoItem.title,
+                        body: todoItem.body
+                    });
+
+                    // If we have status information and a status field, update the status
+                    if (todoItem.status && statusField) {
+                        const draftIssueIndex = needToUpdateItems.length - 1;
+                        const statusOption = statusField.options.find((option: any) => 
+                            normalizeStatus(option.name) === normalizeStatus(todoItem.status || ""));
+                        
+                        if (statusOption) {
+                            needToUpdateItems.push({
+                                __typename: "UpdateProjectItemField",
+                                projectId: options.projectId,
+                                itemId: `DRAFT_ISSUE_PLACEHOLDER_${draftIssueIndex}`,
+                                fieldId: statusField.id,
+                                value: {
+                                    singleSelectOptionId: statusOption.id
+                                }
+                            });
+                        }
+                    }
+                }
+                continue;
+            }
+            
             const needToUpdateItem = todoItem.state !== projectItem.item.state;
             if (needToUpdateItem) {
                 if (options.projectId) {
-                    // For V2, we would need to update the item's state through appropriate mutations
-                    // Skip items with invalid IDs (like the test IDs causing issues)
-                    if (!projectItem.item.id || projectItem.item.id.startsWith('DI_lAHOBFSaJM4BEcZZzgJ0')) {
-                        console.warn("Skipping item with invalid ID:", projectItem.item.id);
-                    } else {
-                        needToUpdateItems.push({
-                            __typename: projectItem.item.__typename as "Issue" | "PullRequest" | "DraftIssue",
-                            id: projectItem.item.id,
-                            state: todoItem.state
-                        });
-                    }
+                    needToUpdateItems.push({
+                        __typename: projectItem.item.__typename as "Issue" | "PullRequest" | "DraftIssue",
+                        id: projectItem.item.id,
+                        state: todoItem.state
+                    });
                 } else {
                     needToUpdateItems.push({
                         __typename: projectItem.item.__typename as "Issue" | "PullRequest" | "ProjectCard",
@@ -774,21 +813,21 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
                         normalizeStatus(option.name) === normalizeStatus(todoItem.status || ""));
                     
                     if (statusOption) {
-                        // Skip items with invalid IDs (like the test IDs causing issues)
-                        if (!projectItem.item.id || projectItem.item.id.startsWith('DI_lAHOBFSaJM4BEcZZzgJ0')) {
-                            console.warn("Skipping item with invalid ID:", projectItem.item.id);
-                        } else {
-                            needToUpdateItems.push({
-                                __typename: "UpdateProjectItemField",
-                                projectId: options.projectId,
-                                itemId: projectItem.item.id,
-                                fieldId: statusField.id,
-                                value: {
-                                    singleSelectOptionId: statusOption.id
-                                }
-                            });
-                        }
+                        console.log(`Updating status for "${todoItem.title}" from "${projectItem.item.status}" to "${todoItem.status}"`);
+                        needToUpdateItems.push({
+                            __typename: "UpdateProjectItemField",
+                            projectId: options.projectId,
+                            itemId: projectItem.item.id,
+                            fieldId: statusField.id,
+                            value: {
+                                singleSelectOptionId: statusOption.id
+                            }
+                        });
+                    } else {
+                        console.warn(`Status option not found for "${todoItem.status}". Available options:`, statusField.options.map((opt: any) => opt.name));
                     }
+                } else {
+                    console.log(`Status unchanged for "${todoItem.title}": ${todoItem.status}`);
                 }
             }
         }

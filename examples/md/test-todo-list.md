@@ -5,14 +5,14 @@
   - Configure IDE
   - Setup version control
 
-## To do
+## Ready
 
 - [ ] Story: Implement core functionality
   - Design API endpoints
   - Create database schema
   - Implement business logic
 
-## In progress
+## In review
 
 - [ ] Story: Develop UI components
   - Create mockups
