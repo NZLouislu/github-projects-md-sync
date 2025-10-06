@@ -1,61 +1,70 @@
 import * as dotenv from "dotenv";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { syncToProject } from "../src/index";
+import { syncMarkdownFilesToProject } from "./examples-markdwon-to-project";
 
 // Load environment variables
 dotenv.config();
 
-describe("Sync Markdown Files to Project", () => {
+describe("Sync Markdown Files to Project via examples-markdwon-to-project.ts", () => {
   const testMdDir = path.join(__dirname, "md");
-  
-  before(async function() {
+
+  it("should execute syncMarkdownFilesToProject function and sync markdown files to project", async function() {
     // Skip if no GitHub token or project ID
     if (!process.env.GITHUB_TOKEN || !process.env.PROJECT_ID) {
-      console.log("Skipping tests: Missing GITHUB_TOKEN or PROJECT_ID environment variables");
+      console.log("Skipping sync test: Missing GITHUB_TOKEN or PROJECT_ID environment variables");
       this.skip();
       return;
     }
-  });
-  
-  it("should sync markdown files from specified directory to project", async function() {
-    this.timeout(10000); // Increase timeout for this test
-    
+
+    this.timeout(30000); // Increase timeout for this test
+
     try {
-      // Read the test todo list markdown file
-      const markdownFile = path.join(testMdDir, "test-todo-list.md");
-      const markdownContent = await fs.readFile(markdownFile, "utf8");
-      
-      const options = {
-        projectId: process.env.PROJECT_ID!,
-        token: process.env.GITHUB_TOKEN!,
-        includesNote: true
-      };
-      
-      // Test syncing markdown content to project
-      await syncToProject(markdownContent, options);
-      console.log("Markdown content synced successfully to project");
+      console.log("Starting sync via direct function call...");
+      await syncMarkdownFilesToProject();
+      console.log("Markdown files synced successfully via function call");
     } catch (error) {
-      console.error("Failed to sync markdown to project:", error);
-      // We expect this to potentially fail due to missing GitHub connection in tests
-      console.log("Markdown sync test completed (may have failed due to GitHub connection)");
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Sync failed: ${message}`);
     }
   });
-  
-  it("should sync story files from examples/md directory to project", async function() {
-    this.timeout(10000); // Increase timeout for this test
-    
-    try {
-      // Import the syncStoriesToProject function
-      const { syncStoriesToProject } = await import("../src/index");
-      
-      // Sync stories from the examples/md directory only
-      await syncStoriesToProject(testMdDir);
-      console.log("Story files from examples/md synced successfully to project");
-    } catch (error) {
-      console.error("Failed to sync story files from examples/md to project:", error);
-      // We expect this to potentially fail due to missing GitHub connection in tests
-      console.log("Story files sync test completed (may have failed due to GitHub connection)");
+
+  it("should verify that markdown files exist in examples/md directory", async () => {
+    const files = await fs.readdir(testMdDir);
+    const mdFiles = files.filter(file => file.endsWith('.md'));
+
+    if (mdFiles.length === 0) {
+      throw new Error("No markdown files found in examples/md directory");
     }
+
+    console.log(`Found markdown files: ${mdFiles.join(', ')}`);
+
+    // Verify specific files exist
+    const expectedFiles = ["test-todo-list.md", "test-story.md"];
+    for (const expectedFile of expectedFiles) {
+      if (!mdFiles.includes(expectedFile)) {
+        throw new Error(`Expected markdown file ${expectedFile} not found`);
+      }
+    }
+  });
+
+  it("should validate markdown content structure", async () => {
+    const todoListFile = path.join(testMdDir, "test-todo-list.md");
+    const content = await fs.readFile(todoListFile, "utf8");
+
+    // Check for expected headings
+    const expectedHeadings = ["## Backlog", "## Ready", "## In review", "## Done"];
+    for (const heading of expectedHeadings) {
+      if (!content.includes(heading)) {
+        throw new Error(`Expected heading "${heading}" not found in test-todo-list.md`);
+      }
+    }
+
+    // Check for task items
+    if (!content.includes("- [ ]") && !content.includes("- [x]")) {
+      throw new Error("No task items found in test-todo-list.md");
+    }
+
+    console.log("Markdown content structure validated successfully");
   });
 });

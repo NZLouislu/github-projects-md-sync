@@ -106,9 +106,9 @@ export async function parseStoryFile(filePath: string): Promise<Story> {
 }
 
 /**
- * Find an existing project item by Story ID
+ * Find an existing project item by Story ID or title
  */
-async function findExistingItem(projectId: string, storyId: string, token: string): Promise<string | null> {
+async function findExistingItem(projectId: string, storyId: string, title: string, token: string): Promise<{ projectItemId: string, contentType: string, contentId: string } | null> {
   const query = `
     query($projectId: ID!, $first: Int!, $after: String) {
       node(id: $projectId) {
@@ -116,6 +116,28 @@ async function findExistingItem(projectId: string, storyId: string, token: strin
           items(first: $first, after: $after) {
             nodes {
               id
+              content {
+                __typename
+                ... on DraftIssue {
+                  id
+                  title
+                  body
+                }
+                ... on Issue {
+                  id
+                  title
+                  body
+                  state
+                  url
+                }
+                ... on PullRequest {
+                  id
+                  title
+                  body
+                  state
+                  url
+                }
+              }
               fieldValues(first: 100) {
                 nodes {
                   ... on ProjectV2ItemFieldTextValue {
@@ -142,40 +164,53 @@ async function findExistingItem(projectId: string, storyId: string, token: strin
   try {
     let hasNextPage = true;
     let cursor: string | null = null;
-    
+
     while (hasNextPage) {
       const variables = {
         projectId: projectId,
         first: 100,
         after: cursor
       };
-      
+
       const response: any = await graphql(query, {
         ...variables,
         headers: {
           authorization: `Bearer ${token}`
         }
       });
-      
+
       const items = response.node.items.nodes;
-      
+
       for (const item of items) {
-        // Look for an item with a matching Story ID field
+        // First, try to match by Story ID
         for (const fieldValue of item.fieldValues.nodes) {
           if (fieldValue.field && fieldValue.field.name === 'Story ID' && fieldValue.text === storyId) {
-            return item.id;
+            return {
+              projectItemId: item.id,
+              contentType: item.content.__typename,
+              contentId: item.content.id
+            };
           }
         }
+
+        // Fallback: match by title (for items created without Story ID)
+        if (item.content && item.content.title === title) {
+          return {
+            projectItemId: item.id,
+            contentType: item.content.__typename,
+            contentId: item.content.id
+          };
+        }
       }
-      
+
       const pageInfo = response.node.items.pageInfo;
       hasNextPage = pageInfo.hasNextPage;
       cursor = pageInfo.endCursor;
     }
-    
+
     return null;
   } catch (error) {
-    console.error(`Error searching for existing item with storyId ${storyId}:`, error);
+    console.error(`Error searching for existing item with storyId ${storyId} or title ${title}:`, error);
     return null;
   }
 }
@@ -183,8 +218,8 @@ async function findExistingItem(projectId: string, storyId: string, token: strin
 /**
  * Update an existing project item
  */
-async function updateProjectItem(projectId: string, itemId: string, story: Story, token: string): Promise<void> {
-  // Try to update as a DraftIssue first
+async function updateProjectItem(projectId: string, projectItemId: string, story: Story, token: string, contentType: string, contentId: string): Promise<void> {
+  // Try to update as a DraftIssue first if it's a DraftIssue
   const updateDraftIssueMutation = `
     mutation($draftIssueId: ID!, $title: String!, $body: String) {
       updateProjectV2DraftIssue(input: {
@@ -198,7 +233,7 @@ async function updateProjectItem(projectId: string, itemId: string, story: Story
       }
     }
   `;
-  
+
   const updateProjectItemMutation = `
     mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
       updateProjectV2ItemFieldValue(input: {
@@ -215,80 +250,83 @@ async function updateProjectItem(projectId: string, itemId: string, story: Story
       }
     }
   `;
-  
+
   const titleMatch = story.content.match(/##\s+(.*)/);
   const title = titleMatch ? titleMatch[1] : "Untitled Story";
-  
-  try {
-    // Try updating as DraftIssue
-    await graphql(updateDraftIssueMutation, {
-      draftIssueId: itemId,
-      title,
-      body: story.content,
-      headers: {
-        authorization: `Bearer ${token}`
-      }
-    });
-    console.log(`Successfully updated draft issue: ${itemId}`);
-  } catch (draftError) {
-    // If that fails, try updating as ProjectItem
-    console.log(`Failed to update as draft issue, trying as project item: ${draftError}`);
-    
-    // We need to get the body field ID first
-    const projectFieldsQuery = `
-      query($projectId: ID!) {
-        node(id: $projectId) {
-          ... on ProjectV2 {
-            fields(first:100) {
-              nodes {
-                ... on ProjectV2Field {
-                  id
-                  name
-                }
+
+  if (contentType === 'DraftIssue') {
+    try {
+      // Update as DraftIssue
+      await graphql(updateDraftIssueMutation, {
+        draftIssueId: contentId,
+        title,
+        body: story.content,
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
+      console.log(`Successfully updated draft issue: ${contentId}`);
+    } catch (draftError) {
+      console.log(`Failed to update as draft issue, trying as project item: ${draftError}`);
+      // Fall through to update fields
+    }
+  }
+
+  // Update fields using projectItemId
+  // We need to get the body field ID first
+  const projectFieldsQuery = `
+    query($projectId: ID!) {
+      node(id: $projectId) {
+        ... on ProjectV2 {
+          fields(first:100) {
+            nodes {
+              ... on ProjectV2Field {
+                id
+                name
               }
             }
           }
         }
       }
-    `;
+    }
+  `;
 
-    try {
-      const fieldsResult: any = await graphql(projectFieldsQuery, {
+  try {
+    const fieldsResult: any = await graphql(projectFieldsQuery, {
+      projectId,
+      headers: {
+        authorization: `Bearer ${token}`
+      }
+    });
+
+    // Find the "Body" field
+    const bodyField = fieldsResult.node.fields.nodes.find((field: any) => field.name === "Body");
+
+    if (bodyField) {
+      await graphql(updateProjectItemMutation, {
         projectId,
+        itemId: projectItemId,
+        fieldId: bodyField.id,
+        value: story.content,
         headers: {
           authorization: `Bearer ${token}`
         }
       });
-
-      // Find the "Body" field
-      const bodyField = fieldsResult.node.fields.nodes.find((field: any) => field.name === "Body");
-      
-      if (bodyField) {
-        await graphql(updateProjectItemMutation, {
-          projectId,
-          itemId,
-          fieldId: bodyField.id,
-          value: story.content,
-          headers: {
-            authorization: `Bearer ${token}`
-          }
-        });
-        console.log(`Successfully updated project item: ${itemId}`);
-      }
-    } catch (projectItemError) {
-      console.error(`Failed to update as project item: ${projectItemError}`);
-      // Re-throw the error so it can be handled upstream
-      throw projectItemError;
+      console.log(`Successfully updated project item body: ${projectItemId}`);
     }
+  } catch (projectItemError) {
+    console.error(`Failed to update project item body: ${projectItemError}`);
+    // Re-throw the error so it can be handled upstream
+    throw projectItemError;
   }
   
   // Update the status field
   if (story.status && story.status !== "No status") {
-    await updateItemStatus(projectId, itemId, story.status, token);
+    await updateItemStatus(projectId, projectItemId, story.status, token);
   }
-  
+
   // Update the Story ID field
-  await updateItemStoryId(projectId, itemId, story.storyId, token);
+  await updateItemStoryId(projectId, projectItemId, story.storyId, token);
 }
 
 /**
@@ -373,15 +411,15 @@ async function updateItemStoryId(projectId: string, itemId: string, storyId: str
  * @param token GitHub token
  * @returns Project item ID
  */
-async function createOrUpdateProjectItem(projectId: string, story: Story, token: string): Promise<string> {
+export async function createOrUpdateProjectItem(projectId: string, story: Story, token: string): Promise<string> {
   // Check if an item with this story ID already exists
-  const existingItemId = await findExistingItem(projectId, story.storyId, token);
-  
-  if (existingItemId) {
+  const existingItem = await findExistingItem(projectId, story.storyId, story.title, token);
+
+  if (existingItem) {
     // Update existing item
-    console.log(`Updating existing item with ID: ${existingItemId} for story: ${story.title}`);
-    await updateProjectItem(projectId, existingItemId, story, token);
-    return existingItemId;
+    console.log(`Updating existing item with ID: ${existingItem.projectItemId} for story: ${story.title}`);
+    await updateProjectItem(projectId, existingItem.projectItemId, story, token, existingItem.contentType, existingItem.contentId);
+    return existingItem.projectItemId;
   } else {
     // Create new item
     console.log(`Creating new item for story: ${story.title}`);

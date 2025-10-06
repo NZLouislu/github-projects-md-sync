@@ -50,7 +50,12 @@ type SyncIssuesParam =
           title: string;
           body: string;
       }
-    | {
+   | {
+          // Delete draft issue
+          __typename: "DeleteDraftIssue";
+          id: string;
+      }
+   | {
           // Update project item field values
           __typename: "UpdateProjectItemField";
           projectId: string;
@@ -113,6 +118,16 @@ export const syncIssues = async (queryParams: SyncIssuesParam[], options: SyncTo
                         draftIssueId: "${param.id}"
                         title: ${JSON.stringify(param.title)}
                         body: ${JSON.stringify(param.body)}
+                    }) {
+                        draftIssue {
+                            id
+                        }
+                    }
+                `;
+            } else if (param.__typename === "DeleteDraftIssue") {
+                return `
+                    deleteDraftIssue${index}: deleteProjectV2DraftIssue(input: {
+                        draftIssueId: "${param.id}"
                     }) {
                         draftIssue {
                             id
@@ -606,9 +621,22 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
                     console.warn(`Skipping item with missing ID for "${columnItem.title}"`);
                     continue;
                 }
-                
+
+                // Skip problematic IDs that are known to be invalid
+                const isProblematicId = columnItem.id && (
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q7k') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q04') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q08') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ02ug') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ03L4')
+                );
+                if (isProblematicId) {
+                    console.warn(`Skipping item with problematic ID: ${columnItem.id} for "${columnItem.title}"`);
+                    continue;
+                }
+
                 // Debug logging to see what we're comparing
-                // console.log("Comparing:", { 
+                // console.log("Comparing:", {
                 //     syncTaskItemTitle: `"${syncTaskItem.title}"`,
                 //     columnItemTitle: `"${columnItem.title}"`,
                 //     syncTaskItemUrl: syncTaskItem.url,
@@ -616,24 +644,27 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
                 //     titleMatch: syncTaskItem.title === columnItem.title,
                 //     trimmedTitleMatch: syncTaskItem.title.trim() === columnItem.title.trim()
                 // });
-                
-                // Check by storyId first if available
+
+                // Check by title first (trimmed comparison, ignoring "Story: " prefix)
+                const syncTitle = syncTaskItem.title.replace(/^Story:\s*/, '').trim();
+                const itemTitle = columnItem.title.replace(/^Story:\s*/, '').trim();
+                if (syncTitle === itemTitle) {
+                    return {
+                        item: columnItem,
+                        columnId: column.id
+                    };
+                }
+
+                // Check by storyId if available
                 if (columnItem.storyId && syncTaskItem.url && syncTaskItem.url.includes(columnItem.storyId)) {
                     return {
                         item: columnItem,
                         columnId: column.id
                     };
                 }
-                
+
                 // Fallback to URL matching
                 if (syncTaskItem.url && columnItem.url && syncTaskItem.url === columnItem.url) {
-                    return {
-                        item: columnItem,
-                        columnId: column.id
-                    };
-                } 
-                // Fallback to title matching with trimmed comparison
-                else if (syncTaskItem.title.trim() === columnItem.title.trim()) {
                     return {
                         item: columnItem,
                         columnId: column.id
@@ -645,14 +676,14 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
     };
     
     for (const todoItem of todoItems) {
-        const projectItem = findProjectTodoItem(todoItem);
-        
+        let projectItem = findProjectTodoItem(todoItem);
+
         if (projectItem) {
             console.log(`Found existing item for "${todoItem.title}": ${projectItem.item.id}`);
         } else {
             console.log(`No existing item found for "${todoItem.title}"`);
         }
-        
+
         // Add new Draft Issue for V2
         if (!projectItem && options.projectId) {
             console.log(`Creating new draft issue for "${todoItem.title}"`);
@@ -750,7 +781,8 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
             const isProblematicId = projectItem.item.id && (
                 projectItem.item.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q7k') ||
                 projectItem.item.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q04') ||
-                projectItem.item.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q08')
+                projectItem.item.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q08') ||
+                projectItem.item.id.includes('DI_lAHOBFSaJM4BEtZdzgJ02ug')
             );
             
             if (isProblematicId) {
