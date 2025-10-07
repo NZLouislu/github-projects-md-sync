@@ -9,5 +9,3 @@ Ready
 - Design API endpoints
 - Create database schema
 - Implement business logic
-
-
