@@ -15,13 +15,13 @@ The tool handles the complete synchronization workflow between Markdown document
 
 ## Features
 
-- **Bidirectional Sync**: Convert between GitHub Projects and Markdown formats
-- **Status Mapping**: Automatically maps Markdown section headers (To Do, In Progress, Done) to GitHub Project status fields
-- **Draft Issue Support**: Create and update draft issues in GitHub Projects V2
-- **Flexible Configuration**: Customize field mappings and filtering options
-- **TypeScript Support**: Full TypeScript definitions included
-- **Story Management**: Create and sync story files with project items
-- **Custom Directory Support**: Sync story files from any directory
+- Bidirectional Sync: Convert between GitHub Projects and Markdown formats
+- Status Mapping: Automatically maps Markdown section headers (Backlog, Ready, In progress, In review, Done) to GitHub Project status fields
+- Draft Issue Support: Create and update draft issues in GitHub Projects V2
+- Flexible Configuration: Customize field mappings and filtering options
+- TypeScript Support: Full TypeScript definitions included
+- Story Management: Create and sync story files with project items
+- Custom Directory Support: Sync story files from any directory
 
 ## Installation
 
@@ -45,42 +45,32 @@ PROJECT_ID=your_project_id_here
 ```typescript
 import { mdToProject, projectToMd } from 'github-projects-md-sync';
 
-// Sync markdown files to GitHub Project
 await mdToProject(projectId, githubToken, './markdown-files');
-
-// Export GitHub Project to markdown files (optional output path)
 await projectToMd(projectId, githubToken, './output-dir');
-// Or use default './stories' directory
 await projectToMd(projectId, githubToken);
-```
-
-### Command Line
-
-```bash
-# Sync stories from the default 'stories' directory
-npx ts-node src/story-to-project-item.ts
-
-# Sync stories from a custom directory
-npx ts-node src/story-to-project-item.ts /path/to/your/stories
 ```
 
 ### Examples
 
-See the [examples](examples/) directory for complete usage examples:
+See the examples directory for complete usage examples:
 
-1. [example-usage.ts](examples/example-usage.ts) - Complete example of all features
-2. [example-usage.test.ts](examples/example-usage.test.ts) - Test examples
-3. [md.test.ts](examples/md.test.ts) - Tests for processing markdown files
+1. examples/md-to-project.ts — syncs local markdown in examples/md to GitHub Projects
+2. examples/project-to-md.ts — exports GitHub Project items to markdown in examples/items (default) or a custom path
+3. examples/test.ts — example tests launcher for mocha with ts-node
+4. examples/md/ — sample markdown inputs used for syncing
+5. examples/items/ — output directory where exported story markdown files are written
+6. examples/tests/md-to-project.test.ts — tests for syncing markdown to project
+7. examples/tests/project-to-md.test.ts — tests for exporting project items to markdown
 
 To run from examples directory:
 
 ```bash
 cd examples
-npm run md
-npm run project
-npm t examples
-npm t examples/md
-npm t examples/project
+npm run md        # runs md-to-project.ts, syncs local markdown in examples/md to GitHub Projects
+npm run project   # runs project-to-md.ts, exports GitHub Project items to markdown in examples/items (default)
+npm t examples    # runs all example tests
+npm t examples/md # runs tests for syncing markdown to project
+npm t examples/project # runs tests for exporting project to markdown
 ```
 
 ## How to get PROJECT_ID (personal GitHub user)
@@ -131,21 +121,19 @@ $response.data.repository.projectsV2.nodes | Select-Object id, title
 
 Sync markdown files from a directory to GitHub Project.
 
-- `projectId`: GitHub Project V2 ID
-- `githubToken`: GitHub personal access token
-- `sourcePath`: Path to directory containing markdown files
+- projectId: GitHub Project V2 ID
+- githubToken: GitHub personal access token
+- sourcePath: Path to directory containing markdown files
 
 ### projectToMd(projectId: string, githubToken: string, outputPath?: string)
 
 Export GitHub Project items to markdown files.
 
-- `projectId`: GitHub Project V2 ID
-- `githubToken`: GitHub personal access token
-- `outputPath` (optional): Output directory path. Defaults to './stories'
+- projectId: GitHub Project V2 ID
+- githubToken: GitHub personal access token
+- outputPath (optional): Output directory path. Defaults to './stories'
 
 ## Story File Format
-
-Story files should follow this format:
 
 ```markdown
 ## Story: Story Title
@@ -154,7 +142,8 @@ Story files should follow this format:
 unique-story-id
 
 ### Status
-To Do
+
+Ready
 
 ### Description
 Story description
@@ -183,3 +172,63 @@ npm run example:md:test
 ## License
 
 MIT
+
+## GitHub Actions
+
+### Sync MD to Project
+- Trigger: push commits that modify files under examples/md (you can change this to any path)
+- Purpose: sync markdown in examples/md to a GitHub Project
+- Requirements: set repository secrets PROJECT_ID and GITHUB_TOKEN
+
+Create file .github/workflows/sync-md-to-project.yml
+
+```yaml
+name: Sync MD to Project
+on:
+  push:
+    paths:
+      - examples/md/**/*.md
+  workflow_dispatch:
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx ts-node examples/md-to-project.ts
+```
+
+### Daily Project to MD
+- Trigger: daily at 05:00 New Zealand time (UTC 16:00, San Francisco 09:00 on the previous day)
+- Purpose: export project items to markdown files under examples/itesm (you can change this to any path)
+- Requirements: set repository secrets PROJECT_ID and GITHUB_TOKEN
+
+Create file .github/workflows/daily-project-to-md.yml
+
+```yaml
+name: Daily Project to MD
+on:
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx ts-node examples/project-to-md.ts examples/itesm

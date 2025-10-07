@@ -75,7 +75,6 @@ export async function mdToProject(projectId: string, githubToken: string, source
       processedCount++;
     } catch (error) {
       console.error(`Failed to process file ${file}:`, error);
-      // 继续处理其他文件
     }
   }
 
