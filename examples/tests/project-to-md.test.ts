@@ -1,13 +1,13 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs/promises";
-import { projectToMd } from "../src/index";
+import { projectToMd } from "../project-to-md";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 describe("Project to MD Export", () => {
-  const testStoriesDir = path.join(__dirname, "items");
+  const testStoriesDir = path.join(__dirname, "../items");
   
   before(async function() {
     // Skip if no GitHub token or project ID

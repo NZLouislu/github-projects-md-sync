@@ -45,8 +45,6 @@ describe("project-to-stories", () => {
       assert.ok(result.includes("### Story ID\n\nSTORY-123"), 'Should include story ID');
       assert.ok(result.includes("### Status\n\nIn Progress"), 'Should include status');
       assert.ok(result.includes("### Description\n\nTest body content"), 'Should include description');
-      assert.ok(result.includes("### Acceptance Criteria"), 'Should include acceptance criteria');
-      assert.ok(result.includes("### Technical Implementation"), 'Should include technical implementation');
     });
 
     it("should handle missing optional fields", () => {

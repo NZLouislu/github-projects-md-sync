@@ -9,7 +9,7 @@
   - Define user table structure
   - Create relationships between tables
 
-## To do
+## Ready
 
 - [ ] Story: Create API endpoints for user management
   - Implement user registration endpoint

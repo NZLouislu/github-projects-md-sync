@@ -6,12 +6,12 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "mocha -r ts-node/register test/**/*.test.ts",
+    "test": "mocha -r ts-node/register tests/**/*.test.ts",
     "lint": "prettier --check .",
     "clean": "rimraf dist",
     "example": "ts-node examples/examples-integration.ts",
-    "example:sync:test": "mocha -r ts-node/register examples/md-to-project.test.ts",
-    "example:project:test": "mocha -r ts-node/register examples/project-to-md.test.ts"
+    "example:sync:test": "mocha -r ts-node/register examples/tests/md-to-project.test.ts",
+    "example:project:test": "mocha -r ts-node/register examples/tests/project-to-md.test.ts"
   },
   "keywords": [
     "github",

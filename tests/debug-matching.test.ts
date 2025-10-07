@@ -2,6 +2,7 @@ import {
   fetchProjectBoard
 } from "../src/project-to-stories";
 import dotenv from "dotenv";
+import type { ProjectBoardColumn, ProjectBoardItem } from "../src/github-service";
 
 // Load .env file
 dotenv.config();
@@ -27,9 +28,9 @@ describe("debug matching", function () {
     });
     
     console.log("Project columns and items:");
-    project.columns.forEach(column => {
+    project.columns.forEach((column: ProjectBoardColumn) => {
       console.log(`Column: ${column.name} (${column.items.length} items)`);
-      column.items.forEach(item => {
+      column.items.forEach((item: ProjectBoardItem) => {
         console.log(`  - ${item.title} (ID: ${item.id}, URL: ${item.url})`);
       });
     });

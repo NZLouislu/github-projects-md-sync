@@ -1,4 +1,4 @@
-import { ProjectBoardItem } from "../project-to-stories";
+import type { ProjectBoardItem } from "../project-to-stories";
 
 /**
  * Find a project item by storyId or title

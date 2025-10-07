@@ -1,221 +1,10 @@
-import { graphql } from "@octokit/graphql";
-import { debug } from "@deps/debug";
 import fs from "fs/promises";
 import path from "path";
 import { mdEscape, mdLink } from "markdown-function";
-
-export interface ProjectBoardItem {
-    __typename?: "Issue" | "PullRequest" | "DraftIssue" | "ProjectCard";
-    id: string; // GitHub Node id
-    projectItemId: string; // Add this line
-    title: string;
-    url: string;
-    body: string;
-    state: "OPEN" | "CLOSED";
-    storyId?: string;
-    status?: string;
-}
-
-export interface ProjectBoardColumn {
-    id: string;
-    name: string;
-    items: ProjectBoardItem[];
-}
-
-export interface ProjectBoard {
-    id: string;
-    name: string;
-    columns: ProjectBoardColumn[];
-}
-
-export interface FetchProjectBoardOptions {
-    projectId?: string; // Project V2 ID
-    token: string;
-    owner?: string;
-    repo?: string;
-    projectNumber?: number;
-}
-
-/**
- * Fetch project board data from GitHub
- */
-export async function fetchProjectBoard(options: FetchProjectBoardOptions): Promise<ProjectBoard> {
-    // For backward compatibility with the old API
-    if (options.owner && options.repo && options.projectNumber) {
-        // We need to convert the old parameters to projectId
-        // This would require a separate query to get the project ID
-        throw new Error("Legacy GitHub Projects API is not supported. Please provide projectId directly.");
-    }
-
-    if (!options.projectId) {
-        throw new Error("projectId is required for GitHub Projects V2 API");
-    }
-
-    const query = `
-        query($projectId: ID!) {
-            node(id: $projectId) {
-                ... on ProjectV2 {
-                    id
-                    title
-                    fields(first: 100) {
-                        nodes {
-                            ... on ProjectV2Field {
-                                id
-                                name
-                            }
-                            ... on ProjectV2SingleSelectField {
-                                id
-                                name
-                                options {
-                                    id
-                                    name
-                                }
-                            }
-                        }
-                    }
-                    items(first: 100) {
-                        nodes {
-                            id
-                            fieldValues(first: 100) {
-                                nodes {
-                                    ... on ProjectV2ItemFieldTextValue {
-                                        text
-                                        field {
-                                            ... on ProjectV2FieldCommon {
-                                                name
-                                            }
-                                        }
-                                    }
-                                    ... on ProjectV2ItemFieldSingleSelectValue {
-                                        name
-                                        field {
-                                            ... on ProjectV2FieldCommon {
-                                                name
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            content {
-                                ... on DraftIssue {
-                                    id
-                                    title
-                                    body
-                                    createdAt
-                                }
-                                ... on Issue {
-                                    id
-                                    title
-                                    body
-                                    state
-                                    url
-                                }
-                                ... on PullRequest {
-                                    id
-                                    title
-                                    body
-                                    state
-                                    url
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    `;
-
-    debug("options", options);
-    
-    const res: any = await graphql(query, {
-        projectId: options.projectId,
-        headers: {
-            authorization: `Bearer ${options.token}`
-        }
-    });
-
-    const project = res.node;
-    if (!project) {
-        throw new Error("Not found project");
-    }
-
-    // Extract fields
-    const statusField = project.fields.nodes.find((field: any) => field.name === "Status");
-    
-    // Group items by status
-    const statusGroups: Record<string, ProjectBoardItem[]> = {};
-    
-    for (const item of project.items.nodes) {
-        // Extract field values
-        let status = "Backlog"; // Default status changed from "No status" to "Backlog"
-        let storyId = "";
-        
-        for (const fieldValue of item.fieldValues.nodes) {
-            if (fieldValue.field) {
-                if (fieldValue.field.name === "Status") {
-                    // For single select values, the value is in the 'name' property
-                    status = (fieldValue as any).name || status;
-                } else if (fieldValue.field.name === "Story ID") {
-                    storyId = fieldValue.text || storyId;
-                }
-            }
-        }
-        
-        // Get content details
-        const content = item.content;
-        if (!content) continue;
-        
-        const projectItem: ProjectBoardItem = {
-            __typename: content.__typename,
-            id: content.id,
-            projectItemId: item.id, // Add this line
-            title: content.title,
-            url: content.url || "",
-            body: content.body || "",
-            state: content.state === "CLOSED" || content.state === "MERGED" ? "CLOSED" : "OPEN",
-            storyId: storyId || undefined,
-            status: status || "Backlog" // Ensure even if status is empty, use default value
-        };
-        
-        // Group by status
-        if (!statusGroups[status]) {
-            statusGroups[status] = [];
-        }
-        statusGroups[status].push(projectItem);
-    }
-    
-    // Create columns based on status field options or actual statuses found
-    let columns: ProjectBoardColumn[];
-    if (statusField && statusField.options) {
-        columns = statusField.options.map((option: any) => ({
-            id: option.id,
-            name: option.name,
-            items: statusGroups[option.name] || []
-        }));
-        
-        // Ensure all status options are included in columns, even if no corresponding items
-        for (const option of statusField.options) {
-            if (!statusGroups[option.name]) {
-                statusGroups[option.name] = [];
-            }
-        }
-    } else {
-        // Fallback to creating columns from statuses found
-        columns = Object.keys(statusGroups).map(status => ({
-            id: `status-${status}`,
-            name: status,
-            items: statusGroups[status]
-        }));
-    }
-    
-    // No longer add "No status" column, as default status is already "Backlog"
-
-    return {
-        id: project.id,
-        name: project.title,
-        columns
-    };
-}
+import { fetchProjectBoard } from "./github-service";
+import type { ProjectBoardItem, ProjectBoard } from "./github-service";
+export { fetchProjectBoard } from "./github-service";
+export type { ProjectBoardItem, ProjectBoard, ProjectBoardColumn, FetchProjectBoardOptions } from "./github-service";
 
 /**
  * Generate story files from GitHub Project board
@@ -309,22 +98,25 @@ export async function generateStoriesFromProject(options: {
  */
 export function updateStoryContent(content: string, newStatus: string, newDescription: string): string {
     let updatedContent = content;
-    
+
     // Update status
     updatedContent = updatedContent.replace(/(### Status\s*\n\s*)([^\n]+)/i, `$1${newStatus}`);
-    
-    // Update description - handle multiline descriptions
+
+    // To prevent duplicate headers, remove any "### Description" from the incoming description body.
+    const cleanedDescription = newDescription.replace(/^### Description\s*\n/im, '');
+
+    const descriptionHeader = "### Description";
     const descriptionRegex = /(### Description\s*\n\s*)([\s\S]*?)(\n###|$)/i;
-    const descriptionMatch = updatedContent.match(descriptionRegex);
-    
-    if (descriptionMatch) {
-        // Replace the description section with new description
-        updatedContent = updatedContent.replace(
-            descriptionRegex, 
-            `$1${newDescription}$3`
-        );
+
+    if (updatedContent.match(descriptionRegex)) {
+        // If description section exists, replace its content
+        updatedContent = updatedContent.replace(descriptionRegex, `$1${cleanedDescription}$3`);
+    } else {
+        // If no description section, add one after the status
+        const statusRegex = /(### Status\s*\n\s*[^\n]+\s*\n)/i;
+        updatedContent = updatedContent.replace(statusRegex, `$1\n${descriptionHeader}\n\n${cleanedDescription}\n\n`);
     }
-    
+
     return updatedContent;
 }
 
@@ -333,44 +125,17 @@ export function updateStoryContent(content: string, newStatus: string, newDescri
  */
 export function createStoryContent(item: any, status: string): string {
     let content = `## Story: ${item.title}\n\n`;
-    
-    // Add Story ID if available
+
     if (item.storyId) {
-        content += `### Story ID
-
-${item.storyId}
-
-`;
+        content += `### Story ID\n\n${item.storyId}\n\n`;
     }
-    
-    // Add Status - Use item status if available, otherwise use column name
+
     const actualStatus = item.status || status;
-    content += `### Status
+    content += `### Status\n\n${actualStatus}\n\n`;
 
-${actualStatus}
+    const bodyText = item.body && item.body.trim().length > 0 ? item.body : "No description provided.";
+    content += `### Description\n\n${bodyText}\n\n`;
 
-`;
-    
-    // Add Description
-    if (item.body) {
-        content += `### Description
-
-${item.body}
-
-`;
-    } else {
-        content += `### Description
-
-No description provided.
-
-`;
-    }
-    
-    // Only add standard sections if they're not already in the body
-    // Fix: Only add Acceptance Criteria if body doesn't contain it
-    
-    // Fix: Only add Technical Implementation if body doesn't contain it
-    
     return content;
 }
 
@@ -454,8 +219,8 @@ if (require.main === module) {
     // Allow passing custom directory as command line argument
     const storiesDir = process.argv[2];
     
-    generateStoriesFromProject({ 
-        projectId, 
+    generateStoriesFromProject({
+        projectId,
         token,
         storiesDirPath: storiesDir  // Pass custom path if provided
     })

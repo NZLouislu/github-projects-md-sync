@@ -47,6 +47,12 @@ describe("duplicate items handling", function () {
     console.log(`PROGRESS ISSUE count: ${progressIssueCount}`);
     console.log(`DONE ISSUE count: ${doneIssueCount}`);
     
+    if (noteACount === 0 || progressIssueCount === 0 || doneIssueCount === 0) {
+      console.log("Skipping test: required existing items not found in project");
+      this.skip();
+      return;
+    }
+    
     const CODE = `## To do
 
 - [ ] Note A

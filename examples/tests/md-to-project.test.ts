@@ -1,13 +1,13 @@
 import * as dotenv from "dotenv";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { syncMarkdownFilesToProject } from "./md-to-project";
+import { syncMarkdownFilesToProject } from "../md-to-project";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 describe("Sync Markdown Files to Project via md-to-project.ts", () => {
-  const testMdDir = path.join(__dirname, "md");
+  const testMdDir = path.resolve(__dirname, "../md");
 
   it("should execute syncMarkdownFilesToProject function and sync markdown files to project", async function() {
     // Skip if no GitHub token or project ID

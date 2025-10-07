@@ -7,6 +7,13 @@
 
 ## Ready
 
+- Story: Implement core functionality for ready
+  - Design API endpoints
+  - Create database schema
+  - Implement business logic
+
+## In review
+
 - Story: Implement core functionality
   - Design API endpoints
   - Create database schema
@@ -18,6 +25,7 @@
   - Create mockups
   - Implement components
   - Write component tests
+  - Write UI tests
 
 ## Done
 - Story: Project initialization

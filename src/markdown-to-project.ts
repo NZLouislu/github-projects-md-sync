@@ -5,7 +5,8 @@ import remarkStringify from "remark-stringify";
 import { selectAll } from "unist-util-select";
 import { debug } from "@deps/debug";
 import { graphql } from "@octokit/graphql";
-import { fetchProjectBoard, ProjectBoardItem } from "./project-to-stories";
+import { fetchProjectBoard } from "./project-to-stories";
+import type { ProjectBoardItem } from "./project-to-stories";
 import stripIndent from "strip-indent";
 
 const md = unified().use(parse).use(gfm).use(remarkStringify, {
@@ -567,7 +568,13 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
         } as TodoItem;
     });
 
-    const project = await fetchProjectBoard(options);
+    if (!options.projectId) {
+        throw new Error("projectId is required to fetch project board");
+    }
+    const project = await fetchProjectBoard({
+        projectId: options.projectId,
+        token: options.token
+    });
     const needToUpdateItems: SyncIssuesParam[] = [];
     const itemMapping = options.itemMapping ? options.itemMapping : (item: SyncTaskItem) => item;
     
@@ -861,7 +868,7 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
                         needToUpdateItems.push({
                             __typename: "UpdateProjectItemField",
                             projectId: options.projectId,
-                            itemId: projectItem.item.projectItemId, // Use the correct ProjectV2Item ID
+                            itemId: projectItem.item.projectItemId || projectItem.item.id,
                             fieldId: statusField.id,
                             value: {
                                 singleSelectOptionId: statusOption.id
