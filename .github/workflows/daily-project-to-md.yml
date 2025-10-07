@@ -17,9 +17,11 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install deps
-        run: npm ci
+        working-directory: examples
+        run: npm install
       - name: Export project to markdown
+        working-directory: examples
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx ts-node examples/project-to-md.ts examples/itesm
+        run: npx ts-node project-to-md.ts examples/itesm

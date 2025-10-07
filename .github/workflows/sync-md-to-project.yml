@@ -18,9 +18,11 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install deps
-        run: npm ci
+        working-directory: examples
+        run: npm install
       - name: Sync markdown to project
+        working-directory: examples
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx ts-node examples/md-to-project.ts
+        run: npx ts-node md-to-project.ts
