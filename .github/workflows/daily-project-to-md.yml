@@ -28,11 +28,10 @@ jobs:
           cd examples
           npm install
       - name: Export project to markdown
-        working-directory: examples
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npx ts-node project-to-md.ts examples/items
+        run: npx ts-node examples/project-to-md.ts examples/items
       - name: Commit and push exported items
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
