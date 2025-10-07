@@ -72,12 +72,57 @@ See the [examples](examples/) directory for complete usage examples:
 2. [example-usage.test.ts](examples/example-usage.test.ts) - Test examples
 3. [md.test.ts](examples/md.test.ts) - Tests for processing markdown files
 
-To run the examples:
+To run from examples directory:
 
 ```bash
-npm run example
-npm run example:test
-npm run example:md:test
+cd examples
+npm run md
+npm run project
+npm t examples
+npm t examples/md
+npm t examples/project
+```
+
+## How to get PROJECT_ID (personal GitHub user)
+
+- Create a new issue in your repository first
+- Then go to Projects settings -> Manage access, your GitHub username should appear with Admin role
+
+PowerShell to query PROJECT_ID:
+
+```powershell
+$token = "your_github_token_with_repo_and_projects_access"
+$headers = @{
+    Authorization = "Bearer $token"
+    "User-Agent"  = "PowerShell"
+    Accept        = "application/json"
+}
+
+$query = @'
+{
+  repository(owner: "your_github_username", name: "your_repo_name") {
+    projectsV2(first: 10) {
+      nodes {
+        __typename
+        id
+        title
+      }
+    }
+  }
+}
+'@
+
+$body = @{ query = $query } | ConvertTo-Json -Depth 5 -Compress
+
+$response = Invoke-RestMethod `
+    -Uri "https://api.github.com/graphql" `
+    -Method POST `
+    -Headers $headers `
+    -Body $body `
+    -ContentType "application/json"
+
+$response.errors
+$response.data.repository.projectsV2.nodes | Select-Object id, title
 ```
 
 ## API Reference
