@@ -178,7 +178,7 @@ MIT
 ### Sync MD to Project
 - Trigger: push commits that modify files under examples/md (you can change this to any path)
 - Purpose: sync markdown in examples/md to a GitHub Project
-- Requirements: set repository secrets PROJECT_ID and GITHUB_TOKEN
+- Requirements: set repository secrets PROJECT_ID and GH_TOKEN (GH_TOKEN must be a PAT with Organization: Projects Read and write; Repository: Contents Read and write; add Issues/Pull requests as needed)
 
 Create file .github/workflows/sync-md-to-project.yml
 
@@ -201,14 +201,14 @@ jobs:
       - run: npm ci
       - env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npx ts-node examples/md-to-project.ts
 ```
 
 ### Daily Project to MD
 - Trigger: daily at 05:00 New Zealand time (UTC 16:00, San Francisco 09:00 on the previous day)
-- Purpose: export project items to markdown files under examples/itesm (you can change this to any path)
-- Requirements: set repository secrets PROJECT_ID and GITHUB_TOKEN
+- Purpose: export project items to markdown files under examples/items (you can change this to any path)
+- Requirements: set repository secrets PROJECT_ID and GH_TOKEN (GH_TOKEN must be a PAT with Organization: Projects Read and write; Repository: Contents Read and write)
 
 Create file .github/workflows/daily-project-to-md.yml
 
@@ -230,5 +230,5 @@ jobs:
       - run: npm ci
       - env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx ts-node examples/project-to-md.ts examples/itesm
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npx ts-node examples/project-to-md.ts examples/items
