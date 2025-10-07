@@ -12,7 +12,7 @@
   - Create database schema
   - Implement business logic
 
-## In review
+## In progress
 
 - Story: Develop UI components
   - Create mockups

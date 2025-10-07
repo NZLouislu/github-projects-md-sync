@@ -505,7 +505,7 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
     const tree = md.parse(markdown);
     // Get all headings to determine section status
     const headings = selectAll("root > heading", tree);
-    const listItems = selectAll("root > list > listItem[checked]", tree);
+    const listItems = selectAll("root > list > listItem", tree);
     
     // Helper function to normalize status strings for comparison
     const normalizeStatus = (status: string): string => {
@@ -515,7 +515,7 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
     const todoItems: TodoItem[] = listItems.map((item: any) => {
         const todoText = md.stringify(item);
         const lines = todoText.split(/\r?\n/);
-        const title = lines[0].replace(/^-\s+\[.*?]\s*/, "");
+        const title = lines[0].replace(/^-\s+(?:\[[ x]\]\s+)?/, "");
         const body = stripIndent(lines.slice(1).join("\n"));
         // - [ ] [title](https://xxxx)
         const url = item.children[0]?.children[0]?.url;
@@ -861,7 +861,7 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
                         needToUpdateItems.push({
                             __typename: "UpdateProjectItemField",
                             projectId: options.projectId,
-                            itemId: projectItem.item.id,
+                            itemId: projectItem.item.projectItemId, // Use the correct ProjectV2Item ID
                             fieldId: statusField.id,
                             value: {
                                 singleSelectOptionId: statusOption.id

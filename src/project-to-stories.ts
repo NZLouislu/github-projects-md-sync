@@ -7,6 +7,7 @@ import { mdEscape, mdLink } from "markdown-function";
 export interface ProjectBoardItem {
     __typename?: "Issue" | "PullRequest" | "DraftIssue" | "ProjectCard";
     id: string; // GitHub Node id
+    projectItemId: string; // Add this line
     title: string;
     url: string;
     body: string;
@@ -167,6 +168,7 @@ export async function fetchProjectBoard(options: FetchProjectBoardOptions): Prom
         const projectItem: ProjectBoardItem = {
             __typename: content.__typename,
             id: content.id,
+            projectItemId: item.id, // Add this line
             title: content.title,
             url: content.url || "",
             body: content.body || "",
@@ -267,7 +269,8 @@ export async function generateStoriesFromProject(options: {
                         const existingStatus = existingStatusMatch ? existingStatusMatch[1].trim() : null;
                         
                         // Extract description from existing file
-                        const existingDescriptionMatch = existingContent.match(/### Description\s*\n\s*([^\n]+)/i);
+                        const descriptionRegex = /### Description\s*\n\s*([\s\S]*?)(?=\n###|$)/i;
+                        const existingDescriptionMatch = existingContent.match(descriptionRegex);
                         const existingDescription = existingDescriptionMatch ? existingDescriptionMatch[1].trim() : null;
                         
                         // Get the new status and description
@@ -365,23 +368,8 @@ No description provided.
     
     // Only add standard sections if they're not already in the body
     // Fix: Only add Acceptance Criteria if body doesn't contain it
-    if (!item.body || (!item.body.includes("Acceptance Criteria") && !item.body.includes("### Acceptance Criteria"))) {
-        content += `### Acceptance Criteria
-
-- [ ] Criteria 1
-- [ ] Criteria 2
-
-`;
-    }
     
     // Fix: Only add Technical Implementation if body doesn't contain it
-    if (!item.body || (!item.body.includes("Technical Implementation") && !item.body.includes("### Technical Implementation"))) {
-        content += `### Technical Implementation
-
-- Implementation details
-
-`;
-    }
     
     return content;
 }
