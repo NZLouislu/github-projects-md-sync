@@ -5,7 +5,7 @@
   "scripts": {
     "md": "ts-node ./md-to-project.ts",
     "project": "ts-node ./project-to-md.ts",
-    "test": "node ./test.js"
+    "test": "node -r ts-node/register ./test.ts"
   },
   "dependencies": {
     "@octokit/graphql": "^7.0.1",
