@@ -137,6 +137,37 @@ Export GitHub Project items to markdown files.
 
 ## Story File Format
 
+This tool supports two markdown file formats for defining stories:
+
+### 1. Multi-Story File (for bulk creation)
+
+This format is ideal for quickly creating multiple stories in a single file and syncing them to your GitHub Projects board. One markdown file can contain several stories, grouped under headings that correspond to their status. The default statuses are `Backlog`, `Ready`, `In progress`, `In review`, and `Done`.
+
+This is useful for batch-processing and quickly populating a project board.
+
+**Example (`/examples/md/test-todo-list.md`):**
+```markdown
+## Backlog
+
+- Story: Setup development environment
+  - Install required tools
+  - Configure IDE
+
+## Ready
+
+- Story: Implement core functionality for ready
+  - Design API endpoints
+  - Create database schema
+
+- Story: Another story for testing
+  - Implement business logic
+```
+
+### 2. Single-Story File (for detailed stories)
+
+This format is for defining a single, detailed story in its own file. It typically includes a unique `Story ID` for precise synchronization and more detailed sections for description and acceptance criteria.
+
+**Example:**
 ```markdown
 ## Story: Story Title
 
@@ -144,11 +175,10 @@ Export GitHub Project items to markdown files.
 unique-story-id
 
 ### Status
-
 Ready
 
 ### Description
-Story description
+A detailed description of the story.
 
 ### Acceptance Criteria
 - [ ] Criterion 1

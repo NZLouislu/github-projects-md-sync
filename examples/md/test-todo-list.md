@@ -12,12 +12,23 @@
   - Create database schema
   - Implement business logic
 
+- Story: story3 for testing to do list md
+  - Design API endpoints
+  - Create database schema
+  - Implement business logic
+
 ## In review
 
 - Story: Implement core functionality
   - Design API endpoints
   - Create database schema
   - Implement business logic
+
+- Story: Another story for testing to do list md
+  - Design API endpoints
+  - Create database schema
+  - Implement business logic
+
 
 ## In progress
 
