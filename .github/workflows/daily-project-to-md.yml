@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      repository-projects: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,5 +27,5 @@ jobs:
         working-directory: examples
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: npx ts-node project-to-md.ts examples/items
