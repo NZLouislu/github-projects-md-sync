@@ -81,6 +81,8 @@ npm t examples/project # runs tests for exporting project to markdown
 PowerShell to query PROJECT_ID:
 
 ```powershell
+$owner = "your_github_username"
+$repo = "your_repo_name"
 $token = "your_github_token_with_repo_and_projects_access"
 $headers = @{
     Authorization = "Bearer $token"
@@ -88,9 +90,9 @@ $headers = @{
     Accept        = "application/json"
 }
 
-$query = @'
+$query = @"
 {
-  repository(owner: "your_github_username", name: "your_repo_name") {
+  repository(owner: "$owner", name: "$repo") {
     projectsV2(first: 10) {
       nodes {
         __typename
@@ -100,7 +102,7 @@ $query = @'
     }
   }
 }
-'@
+"@
 
 $body = @{ query = $query } | ConvertTo-Json -Depth 5 -Compress
 
