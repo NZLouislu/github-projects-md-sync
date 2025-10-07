@@ -1,6 +1,7 @@
 
 import { graphql } from "@octokit/graphql";
-import { debug } from "@deps/debug";
+import createDebug from "debug";
+const debug = createDebug("github-projects-md-sync");
 
 // Re-exporting ProjectBoardItem and related types for other modules to use from a single source
 export interface ProjectBoardItem {
