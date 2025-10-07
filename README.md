@@ -4,7 +4,18 @@ Sync GitHub Projects V2 with Markdown stories
 
 ## Overview
 
-This tool allows you to synchronize GitHub Projects (V2) with Markdown files. It enables you to:
+
+
+This tool allows you to synchronize Markdown files with GitHub Projects (V2).
+
+Markdown files:
+![alt text](/images/md.png)
+
+GitHub Projects board:
+![alt text](/images/project.png)
+
+
+It enables you to:
 
 1. Convert GitHub Projects board to Markdown format
 2. Sync Markdown task lists to GitHub Projects, including proper status mapping
