@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { parseStoryFile } from "../src/index";
+import { parseStoryFile } from "../src/story-to-project-item";
 
 // Load environment variables
 dotenv.config();

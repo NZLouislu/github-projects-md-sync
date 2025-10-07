@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Test project to md sync functionality",
   "scripts": {
-    "test": "mocha -r ts-node/register examples/items.test.ts",
-    "sync": "ts-node examples/example-project-to-md.ts",
-    "sync:custom": "ts-node examples/example-project-to-md.ts examples/items"
+    "md": "ts-node ./md-to-project.ts",
+    "project": "ts-node ./project-to-md.ts",
+    "test": "node ./test.js"
   },
   "dependencies": {
     "@octokit/graphql": "^7.0.1",

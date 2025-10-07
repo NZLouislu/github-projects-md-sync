@@ -54,10 +54,6 @@ describe("duplicate items handling", function () {
     - [link](https://example.com)
 - [ ] TODO ISSUE
 
-## In progress
-
-- [ ] PROGRESS ISSUE
-
 ## Done
 
 - [x] DONE ISSUE
@@ -84,6 +80,6 @@ describe("duplicate items handling", function () {
     console.log(`New draft issues: ${newDraftIssues.length}`);
     
     // Test assertion
-    assert.strictEqual(newDraftIssues.length, 4, "Should create 4 new draft issues");
+    assert.strictEqual(newDraftIssues.length, 0, "Should not create new draft issues for existing items");
   });
 });

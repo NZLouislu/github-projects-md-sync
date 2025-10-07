@@ -43,43 +43,15 @@ PROJECT_ID=your_project_id_here
 ### As a Library
 
 ```typescript
-import { syncStoriesToProject, syncToProject, fetchProjectBoard, toMarkdown } from 'github-projects-md-sync';
+import { mdToProject, projectToMd } from 'github-projects-md-sync';
 
-// Sync story files from the default 'stories' directory
-await syncStoriesToProject();
+// Sync markdown files to GitHub Project
+await mdToProject(projectId, githubToken, './markdown-files');
 
-// Sync story files from a custom directory
-await syncStoriesToProject('/path/to/your/stories');
-
-// Sync markdown content to GitHub Project
-const markdown = `
-## To Do
-- [ ] Task 1
-- [ ] Task 2
-
-## In Progress
-- [ ] Task 3
-
-## Done
-- [x] Task 4
-`;
-
-const options = {
-  projectId: process.env.PROJECT_ID,
-  token: process.env.GITHUB_TOKEN,
-  includesNote: true
-};
-
-await syncToProject(markdown, options);
-
-// Export GitHub Project to Markdown
-const projectBoard = await fetchProjectBoard({
-  projectId: process.env.PROJECT_ID,
-  token: process.env.GITHUB_TOKEN
-});
-
-const markdownOutput = toMarkdown(projectBoard);
-console.log(markdownOutput);
+// Export GitHub Project to markdown files (optional output path)
+await projectToMd(projectId, githubToken, './output-dir');
+// Or use default './stories' directory
+await projectToMd(projectId, githubToken);
 ```
 
 ### Command Line
@@ -110,26 +82,21 @@ npm run example:md:test
 
 ## API Reference
 
-### syncStoriesToProject(storiesDirPath?: string)
+### mdToProject(projectId: string, githubToken: string, sourcePath: string)
 
-Sync story files to GitHub Project.
+Sync markdown files from a directory to GitHub Project.
 
-- `storiesDirPath` (optional): Path to the directory containing story files. Defaults to `./stories`.
+- `projectId`: GitHub Project V2 ID
+- `githubToken`: GitHub personal access token
+- `sourcePath`: Path to directory containing markdown files
 
-### syncToProject(markdown: string, options: SyncToProjectOptions)
+### projectToMd(projectId: string, githubToken: string, outputPath?: string)
 
-Sync Markdown content to GitHub Project.
+Export GitHub Project items to markdown files.
 
-- `markdown`: Markdown content to sync
-- `options`: Configuration options
-
-### fetchProjectBoard(options: FetchProjectBoardOptions)
-
-Fetch project board data from GitHub.
-
-### toMarkdown(projectBoard: ProjectBoard)
-
-Convert project board to Markdown format.
+- `projectId`: GitHub Project V2 ID
+- `githubToken`: GitHub personal access token
+- `outputPath` (optional): Output directory path. Defaults to './stories'
 
 ## Story File Format
 

@@ -1,12 +1,12 @@
 import * as dotenv from "dotenv";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { syncMarkdownFilesToProject } from "./examples-markdwon-to-project";
+import { syncMarkdownFilesToProject } from "./md-to-project";
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-describe("Sync Markdown Files to Project via examples-markdwon-to-project.ts", () => {
+describe("Sync Markdown Files to Project via md-to-project.ts", () => {
   const testMdDir = path.join(__dirname, "md");
 
   it("should execute syncMarkdownFilesToProject function and sync markdown files to project", async function() {
@@ -61,7 +61,7 @@ describe("Sync Markdown Files to Project via examples-markdwon-to-project.ts", (
     }
 
     // Check for task items
-    if (!content.includes("- [ ]") && !content.includes("- [x]")) {
+    if (!content.includes("- Story:")) {
       throw new Error("No task items found in test-todo-list.md");
     }
 

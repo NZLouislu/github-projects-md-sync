@@ -1,12 +1,12 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs/promises";
-import { generateStoriesFromProject } from "../src/project-to-stories";
+import { projectToMd } from "../src/index";
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-describe("Project to Stories Export", () => {
+describe("Project to MD Export", () => {
   const testStoriesDir = path.join(__dirname, "items");
   
   before(async function() {
@@ -28,12 +28,8 @@ describe("Project to Stories Export", () => {
     this.timeout(10000); // Increase timeout for this test
     
     try {
-      // Test exporting project items to story files in our custom directory
-      await generateStoriesFromProject({
-        projectId: process.env.PROJECT_ID!,
-        token: process.env.GITHUB_TOKEN!,
-        storiesDirPath: testStoriesDir  // Use custom directory
-      });
+      // Test exporting project items to markdown files in our custom directory
+      await projectToMd(process.env.PROJECT_ID!, process.env.GITHUB_TOKEN!, testStoriesDir);
       
       console.log("Project items exported successfully to story files");
       

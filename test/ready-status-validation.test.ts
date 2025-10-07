@@ -6,7 +6,7 @@ async function testReadyStatus(): Promise<void> {
     console.log('Testing Ready status support...\n');
     
     // Read the test markdown file
-    const markdownPath = path.join(__dirname, 'md', 'test-todo-list.md');
+    const markdownPath = path.join(__dirname, '..', 'examples', 'md', 'test-todo-list.md');
     const markdown = await fs.readFile(markdownPath, 'utf8');
     
     console.log('Original markdown content:');

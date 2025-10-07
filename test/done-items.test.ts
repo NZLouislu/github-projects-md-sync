@@ -23,10 +23,7 @@ describe("done items handling", function () {
 
     const CODE = `## Done
 
-- [x] Story: Setup project structure
-  - Initialize repository
-  - Configure build tools
-  - Setup CI/CD pipeline
+- [x] A new done item that does not exist yet
 `;
 
     const request = await createSyncRequestObject(CODE, {

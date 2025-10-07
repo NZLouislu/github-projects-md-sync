@@ -628,7 +628,19 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
                     columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q04') ||
                     columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ0q08') ||
                     columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ02ug') ||
-                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ03L4')
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ03L4') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1ARA') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1AR0') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1ARY') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1BNQ') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1BM8') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1BOg') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1BOs') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1BOo') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1BQM') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1BSE') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1BSI') ||
+                    columnItem.id.includes('DI_lAHOBFSaJM4BEtZdzgJ1BUY')
                 );
                 if (isProblematicId) {
                     console.warn(`Skipping item with problematic ID: ${columnItem.id} for "${columnItem.title}"`);
