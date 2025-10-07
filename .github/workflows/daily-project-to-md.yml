@@ -27,5 +27,4 @@ jobs:
         working-directory: examples
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: npx ts-node project-to-md.ts examples/items
