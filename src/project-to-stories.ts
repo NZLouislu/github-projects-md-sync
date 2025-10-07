@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { mdEscape, mdLink } from "markdown-function";
+import { mdEscape, mdLink } from "./utils/markdown";
 import { fetchProjectBoard } from "./github-service";
 import type { ProjectBoardItem, ProjectBoard } from "./github-service";
 export { fetchProjectBoard } from "./github-service";
