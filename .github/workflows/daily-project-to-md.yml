@@ -17,8 +17,10 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install deps
-        working-directory: examples
-        run: npm install
+        run: |
+          npm install
+          cd examples
+          npm install
       - name: Export project to markdown
         working-directory: examples
         env:

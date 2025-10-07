@@ -18,8 +18,10 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install deps
-        working-directory: examples
-        run: npm install
+        run: |
+          npm install
+          cd examples
+          npm install
       - name: Sync markdown to project
         working-directory: examples
         env:
