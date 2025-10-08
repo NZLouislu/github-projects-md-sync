@@ -162,10 +162,25 @@ This is useful for batch-processing and quickly populating a project board.
 
 **Example (`/examples/md/test-todo-list.md`):**
 ```
+## Backlog
 
+- Story: Setup development environment
+  - Install required tools
+  - Configure IDE
+  - Setup version control
 
+## Ready
+
+- Story: Implement core functionality for ready
+  - Design API endpoints
+  - Create database schema
+  - Implement business logic
+
+- Story: story3 for testing to do list md
+  - Design API endpoints
+  - Create database schema
+  - Implement business logic
 ```
-
 
 ### 2. Single-Story File (for detailed stories)
 
@@ -173,8 +188,26 @@ This format is for defining a single, detailed story in its own file. It typical
 
 **Example:**
 ```
+## Story: Test New Feature Implementation
 
+### Story ID
+test-new-feature
 
+### Status
+In progress
+
+### Description
+This is a test story to verify the functionality of our GitHub Projects sync tool.
+
+### Acceptance Criteria
+- [ ] Feature is implemented correctly
+- [ ] All tests pass
+- [ ] Documentation is updated
+
+### Technical Implementation
+- Create new components
+- Write unit tests
+- Update documentation
 ```
 
 
