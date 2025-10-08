@@ -19,7 +19,7 @@
     "markdown",
     "sync"
   ],
-  "author": "Your Name",
+  "author": "NZLouis",
   "license": "MIT",
   "dependencies": {
     "@octokit/graphql": "^7.0.1",
