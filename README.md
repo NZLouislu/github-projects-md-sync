@@ -60,9 +60,33 @@ PROJECT_ID=your_project_id_here
 ```typescript
 import { mdToProject, projectToMd } from 'github-projects-md-sync';
 
-await mdToProject(projectId, githubToken, './markdown-files');
-await projectToMd(projectId, githubToken, './output-dir');
-await projectToMd(projectId, githubToken);
+// Get environment variables
+const projectId = process.env.PROJECT_ID;
+const token = process.env.GITHUB_TOKEN;
+
+// Sync markdown files to GitHub Project
+const { result: mdResult, logs: mdLogs } = await mdToProject(projectId, token, './markdown-files');
+
+// Export GitHub Project items to markdown files
+const { result: projectResult, logs: projectLogs } = await projectToMd(projectId, token, './output-dir');
+
+// Export to default directory
+const { result: defaultResult, logs: defaultLogs } = await projectToMd(projectId, token);
+
+// Handle logs
+if (result.success) {
+  console.log(`Project items synced to markdown files successfully in ${result.outputDir}!`);
+  console.log(`Created/updated ${result.files.length} files.`);
+} else {
+  console.error("Failed to sync project to markdown.");
+  if (result.errors.length > 0) {
+    console.error("\n--- Errors ---");
+    result.errors.forEach(error => {
+      console.error(`[${error.level.toUpperCase()}] ${error.message}`, ...error.args);
+    });
+    console.error("--------------\n");
+  }
+}
 ```
 
 ### Examples
