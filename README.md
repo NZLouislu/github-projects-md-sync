@@ -10,9 +10,10 @@ This tool allows you to synchronize Markdown files with GitHub Projects (V2).
 
 Markdown files:
 ![Markdown Example](https://github.com/NZLouislu/github-projects-md-sync/blob/main/images/md.png?raw=true)
+![Markdown Example](https://cdn.jsdelivr.net/gh/NZLouislu/github-projects-md-sync@main/images/md.png)
 
 GitHub Projects board:
-![Project Board](https://github.com/NZLouislu/github-projects-md-sync/blob/main/images/project.png?raw=true)
+![Project Board](https://cdn.jsdelivr.net/gh/NZLouislu/github-projects-md-sync@main/images/project.png)
 
 
 It enables you to:
