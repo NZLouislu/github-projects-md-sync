@@ -1,10 +1,10 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs/promises";
-import { projectToMd } from "../project-to-md";
+import { projectToMd } from "../../src/index";
 
 // Load environment variables
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 describe("Project to MD Export", () => {
   const testStoriesDir = path.join(__dirname, "../items");
@@ -29,27 +29,32 @@ describe("Project to MD Export", () => {
     
     try {
       // Test exporting project items to markdown files in our custom directory
-      await projectToMd(process.env.PROJECT_ID!, process.env.GITHUB_TOKEN!, testStoriesDir);
+      const { result, logs } = await projectToMd(process.env.PROJECT_ID!, process.env.GITHUB_TOKEN!, testStoriesDir);
       
-      console.log("Project items exported successfully to story files");
-      
-      // Check if some files were created in the custom directory
-      try {
-        const files = await fs.readdir(testStoriesDir);
-        console.log(`Files in stories directory: ${files.length}`);
-        
-        // Log first few files as examples
-        files.slice(0, 3).forEach(file => {
-          console.log(`  - ${file}`);
-        });
-        
-        // Verify that at least one markdown file was created
-        const markdownFiles = files.filter(file => file.endsWith('.md'));
-        if (markdownFiles.length === 0) {
-          console.warn("No markdown files were created in the stories directory");
+      logs.forEach(log => console.log(`[${log.level}] ${log.message}`, ...log.args));
+
+      if(result.success) {
+        console.log("Project items exported successfully to story files");
+        // Check if some files were created in the custom directory
+        try {
+          const files = await fs.readdir(testStoriesDir);
+          console.log(`Files in stories directory: ${files.length}`);
+          
+          // Log first few files as examples
+          files.slice(0, 3).forEach(file => {
+            console.log(`  - ${file}`);
+          });
+          
+          // Verify that at least one markdown file was created
+          const markdownFiles = files.filter(file => file.endsWith('.md'));
+          if (markdownFiles.length === 0) {
+            console.warn("No markdown files were created in the stories directory");
+          }
+        } catch (error) {
+          console.log("Error reading stories directory:", error);
         }
-      } catch (error) {
-        console.log("Error reading stories directory:", error);
+      } else {
+        console.error("Failed to export project items");
       }
     } catch (error) {
       console.error("Failed to export project items:", error);
