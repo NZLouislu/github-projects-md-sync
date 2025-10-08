@@ -34,6 +34,10 @@ The tool handles the complete synchronization workflow between Markdown document
 - Story Management: Create and sync story files with project items
 - Custom Directory Support: Sync story files from any directory
 
+## Important Notes
+
+- Node.js Runtime Required: This package requires Node.js environment for file system operations and GitHub API interactions. It can be used in Node.js applications, Next.js API routes, or any server-side JavaScript environment, but cannot run directly in browser environments like React client-side for version 0.1.0.
+
 ## Installation
 
 ```bash
@@ -157,44 +161,22 @@ This format is ideal for quickly creating multiple stories in a single file and 
 This is useful for batch-processing and quickly populating a project board.
 
 **Example (`/examples/md/test-todo-list.md`):**
-```markdown
-## Backlog
-
-- Story: Setup development environment
-  - Install required tools
-  - Configure IDE
-
-## Ready
-
-- Story: Implement core functionality for ready
-  - Design API endpoints
-  - Create database schema
-
-- Story: Another story for testing
-  - Implement business logic
 ```
+
+
+```
+
 
 ### 2. Single-Story File (for detailed stories)
 
 This format is for defining a single, detailed story in its own file. It typically includes a unique `Story ID` for precise synchronization and more detailed sections for description and acceptance criteria.
 
 **Example:**
-```markdown
-## Story: Story Title
-
-### Story ID
-unique-story-id
-
-### Status
-Ready
-
-### Description
-A detailed description of the story.
-
-### Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
 ```
+
+
+```
+
 
 ## Development
 
@@ -275,3 +257,6 @@ jobs:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npx ts-node examples/project-to-md.ts examples/items
+```
+
+After the action is executed, it will automatically commit to Git. To manually execute updates and view the latest md documents, run the command locally.
