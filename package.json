@@ -1,6 +1,6 @@
 {
   "name": "github-projects-md-sync",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "A tool to sync GitHub Project V2 items with local markdown files",
   "main": "dist/index.js",
   "author": "Louis Lu, NZLouis <nzlouis.com@gmail.com> (https://blog.nzlouis.com)",
@@ -12,7 +12,6 @@
   "bugs": {
     "url": "https://github.com/nzlouislu/github-projects-md-sync/issues"
   },
-
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
