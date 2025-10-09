@@ -317,3 +317,19 @@ jobs:
 ```
 
 After the action is executed, it will automatically commit to Git. To manually execute updates and view the latest md documents, run the command locally.
+
+## Feedback
+
+If you encounter any problems during use, or have suggestions for improvement, feel free to contact me:
+
+- 🌐 Personal Website: [https://nzlouis.com](https://nzlouis.com)
+- 📝 Blog: [https://blog.nzlouis.com](https://blog.nzlouis.com)
+- 💼 LinkedIn: [https://www.linkedin.com/in/ailouis](https://www.linkedin.com/in/ailouis)
+- 📧 Email: nzlouis.com@gmail.com
+
+You are also welcome to submit feedback directly in [GitHub Issues](https://github.com/nzlouislu/github-projects-md-sync/issues) 🙌
+
+---
+
+If you find this tool helpful, please consider giving it a ⭐️ Star on [GitHub](https://github.com/nzlouislu/github-projects-md-sync) to support the project, or connect with me on [LinkedIn](https://www.linkedin.com/in/ailouis).
+
