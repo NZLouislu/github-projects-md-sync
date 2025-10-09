@@ -6,7 +6,7 @@ Sync GitHub Projects V2 with Markdown stories
 
 
 
-This tool allows you to synchronize Markdown files with GitHub Projects (V2).
+This tool allows you to synchronize Markdown files with GitHub Projects (V2) in both directions.
 
 Markdown files:
 ![Markdown Example](https://cdn.jsdelivr.net/gh/NZLouislu/github-projects-md-sync@main/images/md.png)
@@ -91,25 +91,28 @@ if (result.success) {
 
 ### Examples
 
-See the examples directory for complete usage examples:
+To use this tool, create a `src/projects` directory with the following structure:
+1. src/projects/md-to-project.test.ts — syncs local markdown in src/projects/md to GitHub Projects
+2. src/projects/project-to-md.test.ts — exports GitHub Project items to markdown in src/projects/items (default) or a custom path
+3. src/projects/md/ — sample markdown inputs used for syncing
+4. src/projects/items/ — output directory where exported story markdown files are written
 
-1. examples/md-to-project.ts — syncs local markdown in examples/md to GitHub Projects
-2. examples/project-to-md.ts — exports GitHub Project items to markdown in examples/items (default) or a custom path
-3. examples/test.ts — example tests launcher for mocha with ts-node
-4. examples/md/ — sample markdown inputs used for syncing
-5. examples/items/ — output directory where exported story markdown files are written
-6. examples/tests/md-to-project.test.ts — tests for syncing markdown to project
-7. examples/tests/project-to-md.test.ts — tests for exporting project items to markdown
+Add the following scripts to your package.json:
 
-To run from examples directory:
+```json
+{
+  "scripts": {
+    "md": "ts-node ./src/projects/md-to-project.test.ts",
+    "project": "ts-node ./src/projects/project-to-md.test.ts"
+  }
+}
+```
+
+To run from project root directory:
 
 ```bash
-cd examples
-npm run md        # runs md-to-project.ts, syncs local markdown in examples/md to GitHub Projects
-npm run project   # runs project-to-md.ts, exports GitHub Project items to markdown in examples/items (default)
-npm t examples    # runs all example tests
-npm t examples/md # runs tests for syncing markdown to project
-npm t examples/project # runs tests for exporting project to markdown
+npm run md        # runs src/projects/md-to-project.test.ts, syncs local markdown in src/projects/md to GitHub Projects
+npm run project   # runs src/projects/project-to-md.test.ts, exports GitHub Project items to markdown in src/projects/items (default)
 ```
 
 ## How to get PROJECT_ID (personal GitHub user)
@@ -184,7 +187,7 @@ This format is ideal for quickly creating multiple stories in a single file and 
 
 This is useful for batch-processing and quickly populating a project board.
 
-**Example (`/examples/md/test-todo-list.md`):**
+**Example (`test-todo-list.md`):**
 ```
 ## Backlog
 
@@ -233,27 +236,6 @@ This is a test story to verify the functionality of our GitHub Projects sync too
 - Write unit tests
 - Update documentation
 ```
-
-
-## Development
-
-### Building
-
-```bash
-npm run build
-```
-
-### Testing
-
-```bash
-npm test
-npm run example:test
-npm run example:md:test
-```
-
-## License
-
-MIT
 
 ## GitHub Actions
 
