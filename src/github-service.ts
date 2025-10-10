@@ -117,7 +117,7 @@ export async function fetchProjectBoard(options: FetchProjectBoardOptions): Prom
         }
     `;
 
-    debug("Fetching project board with options:", options);
+    debug("Fetching project board for projectId %s", options.projectId);
     
     const res: any = await graphql(query, {
         projectId: options.projectId,
