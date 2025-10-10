@@ -8,5 +8,3 @@ In progress
 
 - Create reusable button component
 - Implement navigation menu
-
-

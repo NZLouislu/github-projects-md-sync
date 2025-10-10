@@ -8,5 +8,3 @@ Backlog
 
 - Define user table structure
 - Create relationships between tables
-
-

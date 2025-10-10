@@ -8,5 +8,3 @@ Ready
 
 - Implement user registration endpoint
 - Implement user profile update endpoint
-
-
