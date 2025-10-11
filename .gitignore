@@ -4,6 +4,13 @@ node_modules/
 # Build output
 dist/
 build/
+lib/
+
+# Test temp outputs
+.tmp/
+.tmp-examples/
+coverage/
+.nyc_output/
 
 # Logs
 npm-debug.log*
@@ -17,5 +24,6 @@ yarn-error.log*
 .vscode/
 .idea/
 .DS_Store
+
+/blogs
 /tasks
-/lib

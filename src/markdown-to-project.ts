@@ -341,7 +341,6 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
                 const needToUpdateState = todoItem.state !== projectItem.item.state;
                 if (isChangedContent || needToUpdateState) {
                     needToUpdateItems.push({ __typename: "UpdateDraftIssue", id: projectItem.item.id, title: todoItem.title, body: todoItem.body, state: todoItem.state });
-                    continue;
                 }
             }
         }

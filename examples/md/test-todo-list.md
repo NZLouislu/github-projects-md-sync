@@ -5,14 +5,10 @@
   - Configure IDE
   - Setup version control
 
+
 ## Ready
 
 - Story: Implement core functionality for ready
-  - Design API endpoints
-  - Create database schema
-  - Implement business logic
-
-- Story: story3 for testing to do list md
   - Design API endpoints
   - Create database schema
   - Implement business logic
@@ -29,6 +25,10 @@
   - Create database schema
   - Implement business logic
 
+- Story: story3 for testing to do list md
+  - Design API endpoints
+  - Create database schema
+  - Implement business logic
 
 ## In progress
 
@@ -37,6 +37,7 @@
   - Implement components
   - Write component tests
   - Write UI tests
+
 
 ## Done
 - Story: Project initialization

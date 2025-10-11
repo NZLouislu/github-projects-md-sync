@@ -4,7 +4,7 @@
 test-new-feature
 
 ### Status
-In progress
+In review
 
 ### Description
 This is a test story to verify the functionality of our GitHub Projects sync tool.

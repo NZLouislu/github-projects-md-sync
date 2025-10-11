@@ -15,10 +15,20 @@ export function isStoryFile(content: string): boolean {
   return false;
 }
 
-export async function projectToMd(projectId: string, githubToken: string, outputPath?: string, logger: Logger = console): Promise<ResultWithLogs<ProjectToMdResult>> {
+export async function projectToMd(
+  projectId: string,
+  githubToken: string,
+  outputPath?: string,
+  logger: Logger = console,
+  logLevel: LogEntry['level'] = 'debug'
+): Promise<ResultWithLogs<ProjectToMdResult>> {
   const { logger: memoryLogger, getLogs } = createMemoryLogger();
+  const levels: LogEntry['level'][] = ['debug', 'info', 'warn', 'error'];
+  const minLevelIndex = levels.indexOf(logLevel);
   const log = (level: LogEntry['level'], message: string, ...args: any[]) => {
-    logger[level](message, ...args);
+    if (levels.indexOf(level) >= minLevelIndex) {
+      logger[level](message, ...args);
+    }
     memoryLogger[level](message, ...args);
   };
 
@@ -56,10 +66,20 @@ export async function projectToMd(projectId: string, githubToken: string, output
   }
 }
 
-export async function mdToProject(projectId: string, githubToken: string, sourcePath: string, logger: Logger = console): Promise<ResultWithLogs<MdToProjectResult>> {
+export async function mdToProject(
+  projectId: string,
+  githubToken: string,
+  sourcePath: string,
+  logger: Logger = console,
+  logLevel: LogEntry['level'] = 'debug'
+): Promise<ResultWithLogs<MdToProjectResult>> {
   const { logger: memoryLogger, getLogs } = createMemoryLogger();
+  const levels: LogEntry['level'][] = ['debug', 'info', 'warn', 'error'];
+  const minLevelIndex = levels.indexOf(logLevel);
   const log = (level: LogEntry['level'], message: string, ...args: any[]) => {
-    logger[level](message, ...args);
+    if (levels.indexOf(level) >= minLevelIndex) {
+      logger[level](message, ...args);
+    }
     memoryLogger[level](message, ...args);
   };
 
