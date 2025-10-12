@@ -9,5 +9,3 @@ Done
 - Initialize repository
 - Configure build tools
 - Setup CI/CD pipeline
-
-

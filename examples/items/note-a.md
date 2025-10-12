@@ -8,5 +8,3 @@ Backlog
 
 - [ ] Details Note Axxxxx
 - [link](https://example.com)
-
-
