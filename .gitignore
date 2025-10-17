@@ -11,6 +11,7 @@ lib/
 .tmp-examples/
 coverage/
 .nyc_output/
+.codebuddy/
 
 # Logs
 npm-debug.log*
