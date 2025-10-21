@@ -21,5 +21,3 @@ Integrate all NPM package quality assurance tests into the CI/CD pipeline.
   - CI configuration files (e.g., `.github/workflows/publish.yml`) are correctly set up.
     E2E:
   - Actual CI pipeline runs demonstrating successful and blocked publishing scenarios.
-
-

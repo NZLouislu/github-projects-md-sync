@@ -21,5 +21,3 @@ Integration tests covering core paths and tolerance:
   - End-to-end pipeline in mocked environment; asserts files/plans/logs
     E2E (dry-run):
   - Realistic doc verified for plans and logs only
-
-

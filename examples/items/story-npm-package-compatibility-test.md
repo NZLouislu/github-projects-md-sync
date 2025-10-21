@@ -21,5 +21,3 @@ Ensure the NPM package functions correctly across different Node.js versions and
   - N/A
     E2E:
   - CI matrix testing across Node.js versions and OS.
-
-

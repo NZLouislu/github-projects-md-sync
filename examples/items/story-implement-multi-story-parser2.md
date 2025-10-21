@@ -1,4 +1,4 @@
-## Story: Story: Implement Multi-Story Parser
+## Story: - Story: Implement Multi-Story Parser2
 
 ### Status
 
@@ -6,7 +6,7 @@ Backlog
 
 ### Description
 
-story id: Story 0111-Parser1
+story id: Story 0112-Parser
 description:
 Parse multi-story markdown, core capabilities:
 - Status mapping: recognize section headings (Backlog/Ready/In progress/In review/Done); map unknown sections to Backlog.
@@ -28,3 +28,5 @@ Parse multi-story markdown, core capabilities:
   - Mixed valid/invalid stories parsed into a deterministic result set with collected errors/warnings
     E2E (dry-run):
   - On a sample doc, print planned actions with no API calls; errors/warnings visible
+
+

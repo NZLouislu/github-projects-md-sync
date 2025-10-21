@@ -24,5 +24,3 @@ Validate the structure and metadata of the NPM package.
   - `dtslint` or similar tool to validate `.d.ts` files.
     E2E:
   - N/A
-
-

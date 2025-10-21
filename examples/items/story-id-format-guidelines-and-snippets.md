@@ -21,5 +21,3 @@ Define Story ID format and IDE snippets:
   - Dry-run flags format issues with suggestions
     E2E:
   - Authoring flow using the snippet yields a green dry-run
-
-

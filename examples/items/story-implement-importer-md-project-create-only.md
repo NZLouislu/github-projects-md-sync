@@ -2,7 +2,7 @@
 
 ### Status
 
-In review
+Ready
 
 ### Description
 
@@ -24,5 +24,3 @@ Importer with idempotent create-only by story id:
   - Combined with parser output; ensures correct create vs skip paths
     E2E (dry-run):
   - Print “Plan to Create/Skip” lines only; no mutations
-
-
