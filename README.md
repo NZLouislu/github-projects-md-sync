@@ -4,44 +4,35 @@ Sync GitHub Projects V2 with Markdown stories
 
 ## Overview
 
+v0.1.11 introduces a safer, clearer sync model:
+- Single entry for md→project with create-only enforcement
+- Separated formats: Multi-Story for import, Single-Story for export
+- Dry-run diagnostics for CI and previewing plans
 
-
-This tool allows you to synchronize Markdown files with GitHub Projects (V2) in both directions.
-
-Markdown files:
-![Markdown Example](https://cdn.jsdelivr.net/gh/NZLouislu/github-projects-md-sync@main/images/md.png)
-
-GitHub Projects board:
-![Project Board](https://cdn.jsdelivr.net/gh/NZLouislu/github-projects-md-sync@main/images/project.png)
-
-
-It enables you to:
-
-1. Convert GitHub Projects board to Markdown format
-2. Sync Markdown task lists to GitHub Projects, including proper status mapping
-3. Generate story files from project items
-4. Sync custom story files from any directory to GitHub Projects
-
-The tool handles the complete synchronization workflow between Markdown documents and GitHub Projects, making it easier to manage project tasks in a version-controlled, text-based format.
+This tool synchronises Markdown documents and GitHub Projects (V2) so teams can manage work in text while keeping the project board current.
 
 ## Features
 
-- Bidirectional Sync: Convert between GitHub Projects and Markdown formats
-- Status Mapping: Automatically maps Markdown section headers (Backlog, Ready, In progress, In review, Done) to GitHub Project status fields
-- Draft Issue Support: Create and update draft issues in GitHub Projects V2
-- Flexible Configuration: Customize field mappings and filtering options
-- TypeScript Support: Full TypeScript definitions included
-- Story Management: Create and sync story files with project items
-- Custom Directory Support: Sync story files from any directory
-
-## Important Notes
-
-- Node.js Runtime Required: This package requires Node.js environment for file system operations and GitHub API interactions. It can be used in Node.js applications, Next.js API routes, or any server-side JavaScript environment, but cannot run directly in browser environments like React client-side for version 0.1.0.
+- Create-only import: Multi-Story Markdown → GitHub Project items by Story ID
+- Read-only export: GitHub Project → Single-Story Markdown files
+- Status mapping: Backlog, Ready, In progress, In review, Done (with aliases)
+- Deterministic, idempotent behaviour keyed by Story ID
+- Dry-run with structured logs for CI gates
+- TypeScript API and runnable examples
 
 ## Installation
 
 ```bash
 npm install github-projects-md-sync
+```
+
+## Environment
+
+Create a `.env` file:
+
+```env
+GITHUB_TOKEN=your_github_token
+PROJECT_ID=your_project_id
 ```
 
 ## Usage
@@ -53,6 +44,21 @@ Create a `.env` file with your GitHub token:
 ```env
 GITHUB_TOKEN=your_github_token_here
 PROJECT_ID=your_project_id_here
+
+### CLI
+
+- Import Multi-Story Markdown to a GitHub Project (create-only):
+```bash
+npm run md -- stories/test-multi-stories-0.1.11.md
+```
+- Optional dry-run plan:
+```bash
+npm run md -- stories/test-multi-stories-0.1.11.md --dry-run
+```
+- Export GitHub Project items to Single-Story Markdown files:
+```bash
+npm run project
+npm run project -- <storyID>
 ```
 
 ### As a Library
@@ -103,7 +109,8 @@ Add the following scripts to your package.json:
 {
   "scripts": {
     "md": "ts-node ./src/projects/md-to-project.test.ts",
-    "project": "ts-node ./src/projects/project-to-md.test.ts"
+    "project": "ts-node ./src/projects/project-to-md.test.ts",
+    "project:story": "ts-node ./project-to-md.ts --story"
   }
 }
 ```
@@ -111,8 +118,27 @@ Add the following scripts to your package.json:
 To run from project root directory:
 
 ```bash
-npm run md        # runs src/projects/md-to-project.test.ts, syncs local markdown in src/projects/md to GitHub Projects
-npm run project   # runs src/projects/project-to-md.test.ts, exports GitHub Project items to markdown in src/projects/items (default)
+npm run md             # runs src/projects/md-to-project.test.ts, syncs local markdown in src/projects/md to GitHub Projects
+npm run project        # runs src/projects/project-to-md.test.ts, exports GitHub Project items to markdown in src/projects/items (default)
+npm run project:story  # runs project-to-md.ts with --story flag to export a single story interactively
+```
+
+### Using project:story
+
+```bash
+npm run project:story -- --story Story-1234
+```
+
+- Prompts for GitHub token and project ID if env vars `GITHUB_TOKEN` and `PROJECT_ID` are not set
+- Generates markdown for the specified story ID under `stories/` by default
+- Pass `--output ./custom-dir` to override the output directory
+
+Examples:
+
+```bash
+npm run project:story -- --story Story-0112 --output ./stories/single
+npm run project -- Story-0456
+npm run project ./stories/out-story -- Story-0112
 ```
 
 ## How to get PROJECT_ID (personal GitHub user)
@@ -187,64 +213,125 @@ This format is ideal for quickly creating multiple stories in a single file and 
 
 This is useful for batch-processing and quickly populating a project board.
 
-**Example (`test-todo-list.md`):**
+### Library
+
+```typescript
+import { mdToProject, projectToMd } from 'github-projects-md-sync';
+
+const projectId = process.env.PROJECT_ID as string;
+const token = process.env.GITHUB_TOKEN as string;
+
+const mdResult = await mdToProject(projectId, token, './stories');
+const projectResult = await projectToMd(projectId, token, './stories');
+```
+
+Both functions return `{ result, logs }` with structured diagnostics.
+
+## Story File Formats
+
+Two formats with dedicated responsibilities:
+- Multi-Story (for md→project import)
+- Single-Story (for project→md export, read-only)
+
+### Multi-Story format (md→project)
+
+Sections represent status. Each story must include `- Story:`, `story id:`, and `description:`.
+
 ```
 ## Backlog
 
 - Story: Setup development environment
-  - Install required tools
-  - Configure IDE
-  - Setup version control
+  Story ID: Story-001
+  Description:
+    - Install required tools
+    - Configure IDE
+    - Setup version control
 
 ## Ready
 
-- Story: Implement core functionality for ready
-  - Design API endpoints
-  - Create database schema
-  - Implement business logic
+- Story: Implement authentication
+  Story ID: Story-002
+  Description:
+    - Design flows
+    - Implement backend
+    - Integrate frontend
 
-- Story: story3 for testing to do list md
-  - Design API endpoints
-  - Create database schema
-  - Implement business logic
+## In review
+
+- Story: Improve accessibility
+  Story ID: Story-003
+  Ddescription:
+    - Audit key screens
+    - Fix critical issues
 ```
 
-### 2. Single-Story File (for detailed stories)
+Rules:
+- Allowed headings: Backlog, Ready, In progress, In review, Done
+- Aliases: `To do → Ready`, `In Progress/in progress → In progress`
+- Unrecognised headings map to Backlog
+- `story id` must be unique; existing IDs in Project are skipped (no update, no delete)
+- Within a file, duplicate IDs: only the first entry is honoured; later duplicates are skipped
+- `description:` content is free-form Markdown and preserved verbatim
 
-This format is for defining a single, detailed story in its own file. It typically includes a unique `Story ID` for precise synchronization and more detailed sections for description and acceptance criteria.
+### Single-Story format (project→md, read-only)
 
-**Example:**
+Each file contains exactly one story and includes a `Story ID` section.
+
 ```
-## Story: Test New Feature Implementation
+## Story: Setup development environment
 
 ### Story ID
-test-new-feature
+
+Story-001
 
 ### Status
+
 In progress
 
 ### Description
-This is a test story to verify the functionality of our GitHub Projects sync tool.
 
-### Acceptance Criteria
-- [ ] Feature is implemented correctly
-- [ ] All tests pass
-- [ ] Documentation is updated
-
-### Technical Implementation
-- Create new components
-- Write unit tests
-- Update documentation
+- Install required tools
+- Configure IDE
+- Setup version control
 ```
+
+This format is generated by export and must not be used for import.
+
+## Import and Export Behaviour
+
+- md→project (import)
+  - Input: Multi-Story files only
+  - Action: Create new items when `story id` does not exist in Project; skip otherwise
+  - No updates or deletes from Markdown
+- project→md (export)
+  - Output: Multiple Single-Story files, each with `### Story ID`
+  - Read-only: do not feed these files back into import
+
+## Story ID
+
+- Matching uses Story ID only; titles never overwrite existing items
+- If an item with the same ID exists in Project: skip
+- Missing `story id`: strictly skipped and logged with file name, start line, and title
+- Missing ID plus exact title match triggers an additional "Possible title duplicate" warning
+
+## Dry-run and Diagnostics
+
+Use dry-run to preview planned operations, with logs covering create plans, skip reasons, missing IDs, duplicates, and unknown keys. Ideal for CI gates and author feedback.
+
+## Migration (≤0.1.10 → 0.1.11)
+
+- Move from per-story import files to a Multi-Story import file
+- Ensure each story has a unique `story id`
+- Keep edits and deletions within GitHub Project; do not attempt to overwrite via Markdown
+- Update scripts or automation to use the new CLI entry points
+
+## Deprecated
+
+- `src/story-to-project-item.ts` is deprecated as an import entry. Use `src/markdown-to-project.ts` via the CLI or library.
 
 ## GitHub Actions
 
 ### Sync MD to Project
-- Trigger: push commits that modify files under examples/md (you can change this to any path)
-- Purpose: sync markdown in examples/md to a GitHub Project
-- Requirements: set repository secrets PROJECT_ID and GH_TOKEN (GH_TOKEN must be a PAT with Organization: Projects Read and write; Repository: Contents Read and write; add Issues/Pull requests as needed)
-
-Create file .github/workflows/sync-md-to-project.yml
 
 ```yaml
 name: Sync MD to Project
@@ -270,11 +357,6 @@ jobs:
 ```
 
 ### Daily Project to MD
-- Trigger: daily at 05:00 New Zealand time (UTC 16:00, San Francisco 09:00 on the previous day)
-- Purpose: export project items to markdown files under examples/items (you can change this to any path)
-- Requirements: set repository secrets PROJECT_ID and GH_TOKEN (GH_TOKEN must be a PAT with Organization: Projects Read and write; Repository: Contents Read and write)
-
-Create file .github/workflows/daily-project-to-md.yml
 
 ```yaml
 name: Daily Project to MD
@@ -298,7 +380,20 @@ jobs:
         run: npx ts-node examples/project-to-md.ts examples/items
 ```
 
-After the action is executed, it will automatically commit to Git. To manually execute updates and view the latest md documents, run the command locally.
+## API Reference
+
+### mdToProject(projectId: string, githubToken: string, sourcePath: string)
+
+Import Multi-Story Markdown files from a directory into a GitHub Project. Create-only, idempotent by Story ID.
+
+### projectToMd(projectId: string, githubToken: string, outputPath?: string)
+
+Export GitHub Project items to Single-Story Markdown files. Output directory defaults to `./stories` if not provided.
+
+## Notes
+
+- Requires Node.js 18+
+- Runs in Node.js/server environments, not in the browser
 
 ## Feedback
 
@@ -314,4 +409,5 @@ You are also welcome to submit feedback directly in [GitHub Issues](https://gith
 ---
 
 If you find this tool helpful, please consider giving it a ⭐️ Star on [GitHub](https://github.com/nzlouislu/github-projects-md-sync) to support the project, or connect with me on [LinkedIn](https://www.linkedin.com/in/ailouis).
+
 

@@ -2,6 +2,8 @@ import {
   createSyncRequestObject,
   syncToProject,
 } from "../src/markdown-to-project";
+import * as githubService from "../src/github-service";
+import assert from "assert";
 import dotenv from "dotenv";
 import fs from "fs/promises";
 import path from "path";
@@ -12,15 +14,80 @@ dotenv.config();
 const TOKEN = process.env.GITHUB_TOKEN as string;
 const PROJECT_ID = process.env.PROJECT_ID as string;
 
-describe("project-to-markdown", function () {
+describe("markdown-to-project", function () {
   // Increase timeout for tests
   this.timeout(10000);
   
   // Skip all tests in CI environment or when no token is provided
   before(function() {
     if (!TOKEN || process.env.CI) {
-      this.skip();
+      // this.skip();
     }
+  });
+
+  describe("create-only logic", () => {
+    it("should skip creating items that already exist by storyId", async function () {
+      if (!PROJECT_ID) this.skip();
+
+      // 1. Mock the fetchProjectBoard function
+      const originalFetchProjectBoard = githubService.fetchProjectBoard;
+      (githubService as any).fetchProjectBoard = async () => {
+        console.log("Using mocked fetchProjectBoard");
+        return {
+          id: "mock-project-id",
+          name: "Mock Project",
+          columns: [
+            {
+              id: "col1",
+              name: "Backlog",
+              items: [
+                {
+                  id: "item1",
+                  title: "An Existing Story",
+                  body: "story-id: existing-story-id",
+                  storyId: "existing-story-id", // Manually set for the mock
+                  state: "OPEN",
+                  url: undefined
+                },
+              ],
+            },
+          ],
+        };
+      };
+
+      try {
+        // 2. Define markdown with one existing and one new story
+        const markdown = `
+## Backlog
+
+- [ ] An Existing Story
+    story-id: existing-story-id
+
+- [ ] A New Story
+    story-id: new-story-id
+`;
+
+        // 3. Call the function to get the request object
+        const requests = await createSyncRequestObject(markdown, {
+          projectId: PROJECT_ID,
+          token: TOKEN,
+          includesNote: true,
+        });
+
+        // 4. Assert the results
+        const newDraftIssues = requests.filter(r => r.__typename === "NewDraftIssue");
+        
+        assert.strictEqual(newDraftIssues.length, 1, "Should only plan to create one new issue");
+        
+        const newStoryRequest = newDraftIssues[0] as any;
+        assert.strictEqual(newStoryRequest.title, "A New Story", "The new issue should be for the new story");
+
+      } finally {
+        // 5. Restore the original function
+        (githubService as any).fetchProjectBoard = originalFetchProjectBoard;
+        console.log("Restored fetchProjectBoard");
+      }
+    });
   });
 
   it("should get request object", async function () {

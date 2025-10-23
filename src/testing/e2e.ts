@@ -87,6 +87,15 @@ export async function runStory2(): Promise<RunResult> {
   await clearDir(out);
   const res = await projectToMd(cfg.testProjectId, cfg.githubToken, out, console, cfg.logLevel);
   expectSuccess(res);
+  const files = await listMdFiles(out);
+  if (!files.length) return { ok: false, details: "no markdown exported" };
+  for (const f of files) {
+    const txt = await readText(path.join(out, f));
+    const hasStoryId = /(^|\n)###\s*Story\s*ID\s*\n+\s*[^\n]+/m.test(txt);
+    if (!hasStoryId) {
+      return { ok: false, details: `missing "### Story ID" in ${f}` };
+    }
+  }
   return { ok: !!(res.result as any).success, details: "project-to-md completed" };
 }
 

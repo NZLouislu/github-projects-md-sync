@@ -15,6 +15,8 @@ export async function generateStoriesFromProject(options: {
     token: string;
     storiesDirPath?: string;  // Add optional custom path parameter
     logger?: Logger;
+    statuses?: string[];
+    storyId?: string;
 }): Promise<ResultWithLogs<{ files: string[] }>> {
     const { logger: memoryLogger, getLogs } = createMemoryLogger();
     const logger = options.logger || console;
@@ -37,16 +39,54 @@ export async function generateStoriesFromProject(options: {
             await fs.mkdir(storiesDir, { recursive: true });
         }
         
-        log('info', `Processing ${projectBoard.columns.flatMap(c => c.items).length} items from project board.`);
+        const totalItems = projectBoard.columns.reduce((sum, column) => sum + column.items.length, 0);
+        log('info', `Processing ${totalItems} items from project board.`);
+        if (options.storyId) {
+            log('info', `Story filter enabled for ID: ${options.storyId}`);
+        }
+
+        const normalizeForFilter = (s: string) => {
+            const n = s.trim().toLowerCase().replace(/\s+/g, "");
+            if (n === "todo") return "ready";
+            if (n === "inprogress") return "inprogress";
+            if (n === "inreview") return "inreview";
+            if (n === "backlog") return "backlog";
+            if (n === "ready") return "ready";
+            if (n === "done") return "done";
+            return n;
+        };
+        const filterSet = options.statuses && options.statuses.length > 0 ? new Set(options.statuses.map(s => normalizeForFilter(s))) : null;
+        const normalizeStoryId = (s: string) => s.trim().toLowerCase();
+        const targetStoryId = options.storyId ? normalizeStoryId(options.storyId) : null;
 
         for (const column of projectBoard.columns) {
             for (const item of column.items) {
+                // Extract storyId from body if it's not already on the item
+                if (!item.storyId && item.body) {
+                    const foundStoryId = findStoryIdInBody(item.body);
+                    if (foundStoryId) {
+                        item.storyId = foundStoryId;
+                    }
+                }
+                if (targetStoryId) {
+                    const normalizedStoryId = item.storyId ? normalizeStoryId(item.storyId) : null;
+                    if (!normalizedStoryId || normalizedStoryId !== targetStoryId) {
+                        continue;
+                    }
+                }
+                const actualStatus = (item.status || column.name || "").trim();
+                if (filterSet) {
+                    const normalized = normalizeForFilter(actualStatus);
+                    if (!filterSet.has(normalized)) {
+                        continue;
+                    }
+                }
                 if (!item.title || item.title.trim() === "") {
                     log('debug', 'Skipping item with no title.');
                     continue;
                 }
                 
-                const fileName = `${generateFileName(item.title)}.md`;
+                const fileName = `${generateFileName(`${item.storyId ? `${item.storyId}-` : ""}${item.title}`)}.md`;
                 const filePath = path.join(storiesDir, fileName);
                 createdFiles.push(filePath);
                 
@@ -76,7 +116,14 @@ export async function generateStoriesFromProject(options: {
                             await fs.writeFile(filePath, updatedContent, "utf8");
                             log('info', `Updated story file: ${filePath}`);
                         } else {
-                            log('debug', `File already exists with same content, skipping: ${fileName}`);
+                            const needsTitleFix = /^##\s*Story:\s*Story:/i.test(existingContent);
+                            if (needsTitleFix) {
+                                const normalized = updateStoryContent(existingContent, newStatus, newDescription);
+                                await fs.writeFile(filePath, normalized, "utf8");
+                                log('info', `Normalized story title in file: ${filePath}`);
+                            } else {
+                                log('debug', `File already exists with same content, skipping: ${fileName}`);
+                            }
                         }
                     } else {
                         await fs.writeFile(filePath, storyContent, "utf8");
@@ -88,6 +135,11 @@ export async function generateStoriesFromProject(options: {
             }
         }
         
+        if (targetStoryId && createdFiles.length === 0) {
+            log('warn', `Story with ID "${options.storyId}" was not found in project.`);
+        } else if (targetStoryId && createdFiles.length > 0) {
+            log('info', `Exported story with ID "${options.storyId}".`);
+        }
         log('info', "Story generation completed!");
         return { result: { files: createdFiles }, logs: getLogs() };
     } catch (error: any) {
@@ -102,11 +154,17 @@ export async function generateStoriesFromProject(options: {
 export function updateStoryContent(content: string, newStatus: string, newDescription: string): string {
     let updatedContent = content;
 
+    // Normalize title line to avoid "## Story: Story: ..."
+    updatedContent = updatedContent.replace(/^##\s*Story:\s*(Story:\s*)/im, "## Story: ");
+
     // Update status
     updatedContent = updatedContent.replace(/(### Status\s*\n\s*)([^\n]+)/i, `$1${newStatus}`);
 
     // To prevent duplicate headers, remove any "### Description" from the incoming description body.
-    const cleanedDescription = newDescription.replace(/^### Description\s*\n/im, '');
+    let cleanedDescription = newDescription.replace(/^### Description\s*\n/im, '');
+    cleanedDescription = cleanedDescription
+        .replace(/^\s*story id:\s*[^\n]*\n?/i, '')
+        .replace(/^\s*description:\s*\n?/i, '');
 
     const descriptionHeader = "### Description";
     const descriptionRegex = /(### Description\s*\n\s*)([\s\S]*?)(\n###|$)/i;
@@ -127,19 +185,38 @@ export function updateStoryContent(content: string, newStatus: string, newDescri
  * Create story content in standard format
  */
 export function createStoryContent(item: any, status: string): string {
-    let content = `## Story: ${item.title}\n\n`;
+    const title = (item.title || "").replace(/^\s*story:\s*/i, "").trim();
+    let content = `## Story: ${title}\n\n`;
 
-    if (item.storyId) {
-        content += `### Story ID\n\n${item.storyId}\n\n`;
+    const storyId = item.storyId;
+    if (storyId) {
+        content += `### Story ID\n\n${storyId}\n\n`;
     }
 
     const actualStatus = item.status || status;
     content += `### Status\n\n${actualStatus}\n\n`;
 
-    const bodyText = item.body && item.body.trim().length > 0 ? item.body : "No description provided.";
-    content += `### Description\n\n${bodyText}\n\n`;
+    const rawBody = item.body && item.body.trim().length > 0 ? item.body : "No description provided.";
+    const cleanedBody = rawBody
+        .split(/\r?\n/)
+        .filter((line: string) => !/^\s*(story id|description)\s*:/i.test(line))
+        .join("\n");
+    content += `### Description\n\n${cleanedBody}\n\n`;
 
     return content;
+}
+
+/**
+ * Finds a story ID in a string.
+ * @param body The string to search.
+ * @returns The story ID or null.
+ */
+export function findStoryIdInBody(body: string): string | null {
+    if (!body) {
+        return null;
+    }
+    const match = body.match(/(?:story-id|story id):\s*(.+)/i);
+    return match && match[1] ? match[1].trim() : null;
 }
 
 /**

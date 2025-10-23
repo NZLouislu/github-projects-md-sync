@@ -1,6 +1,6 @@
 {
   "name": "github-projects-md-sync",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "A tool to sync GitHub Project V2 items with local markdown files",
   "main": "dist/index.js",
   "author": "Louis Lu, NZLouis <nzlouis.com@gmail.com> (https://blog.nzlouis.com)",
@@ -13,10 +13,37 @@
     "url": "https://github.com/nzlouislu/github-projects-md-sync/issues"
   },
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./index": {
+      "default": "./dist/index.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "index": ["dist/index.d.ts"],
+      "*": ["dist/index.d.ts"]
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf dist && tsc",
     "test": "mocha -r ts-node/register tests/**/*.test.ts",
-    "coverage": "nyc npm run test",
+    "coverage": "nyc mocha -r ts-node/register tests/**/*.test.ts",
     "lint": "prettier --check .",
     "clean": "rimraf dist",
     "example": "ts-node examples/examples-integration.ts",

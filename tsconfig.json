@@ -1,38 +1,30 @@
 {
   "compilerOptions": {
-    /* Basic Options */
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "newLine": "LF",
     "outDir": "./dist/",
-    "target": "es5",
+    "target": "es2019",
     "sourceMap": true,
     "declaration": true,
-    "jsx": "preserve",
+    "declarationMap": true,
     "skipLibCheck": true,
-    "lib": [
-      "esnext",
-      "dom"
-    ],
-    /* Strict Type-Checking Options */
+    "lib": ["esnext", "dom"],
     "strict": true,
-    /* Additional Checks */
-    /* Report errors on unused locals. */
     "noUnusedLocals": true,
-    /* Report errors on unused parameters. */
     "noUnusedParameters": true,
-    /* Report error when not all code paths in function return a value. */
     "noImplicitReturns": true,
-    /* Report errors for fallthrough cases in switch statement. */
     "noFallthroughCasesInSwitch": true
   },
   "include": [
     "src/**/*",
-    "examples/**/*"
+    "examples/**/*",
+    "tests/**/*"
   ],
   "exclude": [
     ".git",
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }

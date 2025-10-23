@@ -1,1 +1,1 @@
-export { mdToProject, projectToMd } from "./project-sync";
+export { mdToProject, projectToMd, projectToMdSingleStory, projectToMdWithOptions } from "./project-sync";

@@ -1,46 +1,21 @@
-## Backlog
-
-- Story: Setup development environment
-  - Install required tools
-  - Configure IDE
-  - Setup version control
-
-
 ## Ready
 
-- Story: Implement core functionality for ready
-  - Design API endpoints
-  - Create database schema
-  - Implement business logic
-
-## In review
-
-- Story: Implement core functionality
-  - Design API endpoints
-  - Create database schema
-  - Implement business logic
-
-- Story: Another story for testing to do list md
-  - Design API endpoints
-  - Create database schema
-  - Implement business logic
-
-- Story: story3 for testing to do list md
-  - Design API endpoints
-  - Create database schema
-  - Implement business logic
+- Story: Story 0115 Ready Example
+  Story ID: Story-0115
+  Description:
+    Ready story example item for testing.
+    Use this to ensure Ready header is recognized.
 
 ## In progress
 
-- Story: Develop UI components
-  - Create mockups
-  - Implement components
-  - Write component tests
-  - Write UI tests
-
+- Story: Story 0116 Progress Example
+  Story ID: Story-0116
+  Description:
+    In progress item to ensure normalization matches.
 
 ## Done
-- Story: Project initialization
-  - Create project repository
-  - Setup project structure
-  - Configure build system
+
+- Story: Story 0117 Done Example
+  Story ID: Story-0117
+  Description:
+    Completed story to ensure Done status is parsed.

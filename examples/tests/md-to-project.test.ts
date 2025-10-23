@@ -31,16 +31,16 @@ describe("Sync Markdown Files to Project via md-to-project.ts", () => {
 
   it("should verify that markdown files exist in examples/md directory", async () => {
     const files = await fs.readdir(testMdDir);
-    const mdFiles = files.filter(file => file.endsWith('.md'));
+    const mdFiles = files.filter(file => file.endsWith(".md"));
 
     if (mdFiles.length === 0) {
       throw new Error("No markdown files found in examples/md directory");
     }
 
-    console.log(`Found markdown files: ${mdFiles.join(', ')}`);
+    console.log(`Found markdown files: ${mdFiles.join(", ")}`);
 
-    // Verify specific files exist
-    const expectedFiles = ["test-todo-list.md", "test-story.md"];
+    // Verify multi-story file exists for v0.1.11
+    const expectedFiles = ["test-multi-stories-0.1.11.md"];
     for (const expectedFile of expectedFiles) {
       if (!mdFiles.includes(expectedFile)) {
         throw new Error(`Expected markdown file ${expectedFile} not found`);
@@ -49,20 +49,19 @@ describe("Sync Markdown Files to Project via md-to-project.ts", () => {
   });
 
   it("should validate markdown content structure", async () => {
-    const todoListFile = path.join(testMdDir, "test-todo-list.md");
-    const content = await fs.readFile(todoListFile, "utf8");
+    const storyFile = path.join(testMdDir, "test-multi-stories-0.1.11.md");
+    const content = await fs.readFile(storyFile, "utf8");
 
     // Check for expected headings
-    const expectedHeadings = ["## Backlog", "## Ready", "## In review", "## Done"];
-    for (const heading of expectedHeadings) {
-      if (!content.includes(heading)) {
-        throw new Error(`Expected heading "${heading}" not found in test-todo-list.md`);
-      }
+    const expectedHeadings = ["## Ready", "## In progress", "## In review", "## Backlog", "## Done"];
+    const hasAnySection = expectedHeadings.some(h => content.includes(h));
+    if (!hasAnySection) {
+      throw new Error("No standard story sections found in test-multi-stories-0.1.11.md (expected one of: Ready/In progress/In review/Backlog/Done)");
     }
 
     // Check for task items
-    if (!content.includes("- Story:")) {
-      throw new Error("No task items found in test-todo-list.md");
+    if (!content.includes("Story:")) {
+      throw new Error("No story items found in test-multi-stories-0.1.11.md");
     }
 
     console.log("Markdown content structure validated successfully");

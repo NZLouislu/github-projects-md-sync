@@ -1,35 +1,20 @@
-## Backlog
-
-- [ ] Story: Implement user authentication system
-  - Create login page
-  - Implement password hashing
-  - Add JWT token support
-
-- [ ] Story: Design database schema
-  - Define user table structure
-  - Create relationships between tables
-
 ## Ready
 
-- [ ] Story: Create API endpoints for user management
-  - Implement user registration endpoint
-  - Implement user profile update endpoint
+- Story: Example Ready Task
+  Story ID: EX-READY-001
+  Description:
+    This is a ready item for testing sync.
 
 ## In progress
 
-- [ ] Story: Develop frontend components
-  - Create reusable button component
-  - Implement navigation menu
-
-## In review
-
-- [ ] Story: Write unit tests for authentication module
-  - Test login functionality
-  - Test password validation
+- Story: Example In Progress Task
+  Story ID: EX-PROG-001
+  Description:
+    This is an in progress item for testing sync.
 
 ## Done
 
-- [x] Story: Setup project structure
-  - Initialize repository
-  - Configure build tools
-  - Setup CI/CD pipeline
+- Story: Example Done Task
+  Story ID: EX-DONE-001
+  Description:
+    This is a completed item for testing sync.

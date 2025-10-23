@@ -5,6 +5,7 @@
   "scripts": {
     "md": "ts-node ./md-to-project.ts",
     "project": "ts-node ./project-to-md.ts",
+    "project:story": "ts-node ./project-to-md.ts --story",
     "test": "node -r ts-node/register ./test.ts"
   },
   "dependencies": {

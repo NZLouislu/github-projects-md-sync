@@ -1,6 +1,6 @@
-
 import { graphql } from "@octokit/graphql";
 import createDebug from "debug";
+import { findStoryIdInBody } from "./project-to-stories"; // Import the helper
 const debug = createDebug("github-projects-md-sync");
 
 // Re-exporting ProjectBoardItem and related types for other modules to use from a single source
@@ -137,28 +137,31 @@ export async function fetchProjectBoard(options: FetchProjectBoardOptions): Prom
     
     for (const item of project.items.nodes) {
         let status = "Backlog";
-        let storyId = "";
+        let storyIdFromField = "";
         
         for (const fieldValue of item.fieldValues.nodes) {
             if (fieldValue.field?.name === "Status") {
                 status = (fieldValue as any).name || status;
             } else if (fieldValue.field?.name === "Story ID") {
-                storyId = fieldValue.text || storyId;
+                storyIdFromField = fieldValue.text || storyIdFromField;
             }
         }
         
         const content = item.content;
         if (!content) continue;
         
+        const body = content.body || "";
+        const storyIdFromBody = findStoryIdInBody(body);
+
         const projectItem: ProjectBoardItem = {
             __typename: content.__typename,
             id: content.id,
             projectItemId: item.id,
             title: content.title,
             url: content.url || "",
-            body: content.body || "",
+            body: body,
             state: content.state === "CLOSED" || content.state === "MERGED" ? "CLOSED" : "OPEN",
-            storyId: storyId || undefined,
+            storyId: storyIdFromField || storyIdFromBody || undefined,
             status: status || "Backlog"
         };
         

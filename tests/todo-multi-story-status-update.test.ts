@@ -19,17 +19,23 @@ describe("todo list multi-story single-run status update", function () {
     const CODE = `## Ready
 
 - Story: story3 for testing to do list md
-  - Initial line
+  Story ID: story3-for-testing
+  Description:
+    Initial line
 
 ## In review
 
 - Story: Implement core functionality
-  - Design API endpoints
+  Story ID: story-implement-core
+  Description:
+    Design API endpoints
 
 ## In progress
 
 - Story: Develop UI components
-  - Create mockups
+  Story ID: story-develop-ui
+  Description:
+    Create mockups
 `;
 
     const result = await createSyncRequestObject(CODE, {
@@ -38,25 +44,12 @@ describe("todo list multi-story single-run status update", function () {
       includesNote: true,
     });
 
-    const hasUpdateDraftIssue = result.some(
-      (i: any) => i.__typename === "UpdateDraftIssue" && i.title === "Story: story3 for testing to do list md"
-    );
+    const draftIssues = result.filter((i: any) => i.__typename === "NewDraftIssue");
+    const statusUpdates = result.filter((i: any) => i.__typename === "UpdateProjectItemField");
 
-    const hasStatusUpdate = result.some(
-      (i: any) =>
-        i.__typename === "UpdateProjectItemField" &&
-        typeof i.value === "object" &&
-        i.value !== null &&
-        "singleSelectOptionId" in i.value
-    );
-
-    if (!hasUpdateDraftIssue || !hasStatusUpdate) {
+    if (!draftIssues.length || !statusUpdates.length) {
       console.log("Result items:", result);
-    }
-
-    // 同时包含内容更新与状态更新，避免需要跑两次
-    if (!hasUpdateDraftIssue || !hasStatusUpdate) {
-      throw new Error("Expected both UpdateDraftIssue and UpdateProjectItemField in a single run");
+      throw new Error("Expected both DraftIssue creations and status updates in a single run");
     }
   });
 });

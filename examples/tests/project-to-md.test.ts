@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs/promises";
-import { projectToMd } from "../../src/index";
+import { projectToMdWithOptions } from "../../src/index";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
@@ -29,7 +29,11 @@ describe("Project to MD Export", () => {
     
     try {
       // Test exporting project items to markdown files in our custom directory
-      const { result, logs } = await projectToMd(process.env.PROJECT_ID!, process.env.GITHUB_TOKEN!, testStoriesDir);
+      const { result, logs } = await projectToMdWithOptions({
+        projectId: process.env.PROJECT_ID!,
+        githubToken: process.env.GITHUB_TOKEN!,
+        outputPath: testStoriesDir
+      });
       
       logs.forEach(log => console.log(`[${log.level}] ${log.message}`, ...log.args));
 

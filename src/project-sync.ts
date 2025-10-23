@@ -1,6 +1,6 @@
 import { generateStoriesFromProject } from "./project-to-stories";
 import { syncToProject } from "./markdown-to-project";
-import { parseStoryFile, createOrUpdateProjectItem } from "./story-to-project-item";
+/* removed unused imports */
 import path from "path";
 import fs from "fs/promises";
 import { Logger, createMemoryLogger, ResultWithLogs, LogEntry, ProjectToMdResult, MdToProjectResult } from "./types";
@@ -22,6 +22,25 @@ export async function projectToMd(
   logger: Logger = console,
   logLevel: LogEntry['level'] = 'debug'
 ): Promise<ResultWithLogs<ProjectToMdResult>> {
+  return projectToMdWithOptions({ projectId, githubToken, outputPath, logger, logLevel });
+}
+
+export async function projectToMdWithOptions(options: {
+  projectId: string;
+  githubToken: string;
+  outputPath?: string;
+  storyId?: string;
+  logger?: Logger;
+  logLevel?: LogEntry['level'];
+}): Promise<ResultWithLogs<ProjectToMdResult>> {
+  const {
+    projectId,
+    githubToken,
+    outputPath,
+    storyId,
+    logger = console,
+    logLevel = 'debug'
+  } = options;
   const { logger: memoryLogger, getLogs } = createMemoryLogger();
   const levels: LogEntry['level'][] = ['debug', 'info', 'warn', 'error'];
   const minLevelIndex = levels.indexOf(logLevel);
@@ -50,10 +69,16 @@ export async function projectToMd(
       projectId,
       token: githubToken,
       storiesDirPath: finalOutputPath,
-      logger
+      logger,
+      storyId
     });
     createdFiles.push(...result.result.files);
     result.logs.forEach(entry => log(entry.level, entry.message, ...entry.args));
+    if (storyId && createdFiles.length === 0) {
+      log('warn', `Story with ID "${storyId}" was not found in project.`);
+    } else if (storyId && createdFiles.length > 0) {
+      log('info', `Exported story with ID "${storyId}".`);
+    }
     log('info', 'Project to markdown conversion completed successfully.');
     const logs = getLogs();
     const errors = logs.filter(l => l.level === 'error');
@@ -64,6 +89,17 @@ export async function projectToMd(
     const errors = logs.filter(l => l.level === 'error');
     return { result: { success: false, outputDir: finalOutputPath, files: [], errors }, logs };
   }
+}
+
+export async function projectToMdSingleStory(
+  projectId: string,
+  githubToken: string,
+  storyId: string,
+  outputPath?: string,
+  logger: Logger = console,
+  logLevel: LogEntry['level'] = 'debug'
+): Promise<ResultWithLogs<ProjectToMdResult>> {
+  return projectToMdWithOptions({ projectId, githubToken, storyId, outputPath, logger, logLevel });
 }
 
 export async function mdToProject(
@@ -84,8 +120,8 @@ export async function mdToProject(
   };
 
   let processedCount = 0;
-  let storyCount = 0;
-  let todoCount = 0;
+  let createdTotal = 0;
+  let skippedTotal = 0;
 
   try {
     const files = await fs.readdir(sourcePath);
@@ -93,7 +129,7 @@ export async function mdToProject(
 
     if (mdFiles.length === 0) {
       log('warn', 'No markdown files found in the specified directory.');
-      return { result: { success: true, processedFiles: 0, storyCount: 0, todoCount: 0, errors: [] }, logs: getLogs() };
+      return { result: { success: true, processedFiles: 0, created: 0, skipped: 0, errors: [] }, logs: getLogs() };
     }
 
     log('info', `Found ${mdFiles.length} markdown files to process.`);
@@ -102,26 +138,20 @@ export async function mdToProject(
       const fullPath = path.join(sourcePath, file);
       try {
         const content = await fs.readFile(fullPath, 'utf8');
-        if (isStoryFile(content)) {
-          log('info', `Processing story file: ${file}`);
-          const story = await parseStoryFile(fullPath);
-          await createOrUpdateProjectItem(projectId, story, githubToken);
-          storyCount++;
-        } else {
-          log('info', `Processing todo list file: ${file}`);
-          const options = {
-            projectId,
-            token: githubToken,
-            includesNote: true,
-            logger
-          };
-          const syncResult = await syncToProject(content, options);
-          syncResult.logs.forEach(entry => log(entry.level, entry.message, ...entry.args));
-          if (!syncResult.result.success) {
-            log('error', `Failed to sync todo list file: ${file}`);
-          }
-          todoCount++;
+        log('info', `Processing multi-story markdown file: ${file}`);
+        const options = {
+          projectId,
+          token: githubToken,
+          includesNote: true,
+          logger
+        };
+        const syncResult = await syncToProject(content, options);
+        syncResult.logs.forEach(entry => log(entry.level, entry.message, ...entry.args));
+        if (!syncResult.result.success) {
+          log('error', `Failed to sync markdown file: ${file}`);
         }
+        createdTotal += (syncResult.result.created || 0);
+        skippedTotal += (syncResult.result.skipped || 0);
         processedCount++;
         log('info', `Successfully processed file: ${file}`);
       } catch (error: any) {
@@ -129,14 +159,14 @@ export async function mdToProject(
       }
     }
 
-    log('info', `Sync completed: ${processedCount} files processed (${storyCount} stories, ${todoCount} todo lists)`);
+    log('info', `Sync completed: ${processedCount} markdown files processed (Created: ${createdTotal} stories, Skipped: ${skippedTotal} duplicates)`);
     const logs = getLogs();
     const errors = logs.filter(l => l.level === 'error');
-    return { result: { success: errors.length === 0, processedFiles: processedCount, storyCount, todoCount, errors }, logs };
+    return { result: { success: errors.length === 0, processedFiles: processedCount, created: createdTotal, skipped: skippedTotal, errors }, logs };
   } catch (error: any) {
     log('error', `An error occurred while reading the source directory: ${sourcePath}`, error);
     const logs = getLogs();
     const errors = logs.filter(l => l.level === 'error');
-    return { result: { success: false, processedFiles: 0, storyCount: 0, todoCount: 0, errors }, logs };
+    return { result: { success: false, processedFiles: 0, created: 0, skipped: 0, errors }, logs };
   }
 }

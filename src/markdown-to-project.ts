@@ -4,7 +4,7 @@ import gfm from "remark-gfm";
 import remarkStringify from "remark-stringify";
 import { selectAll } from "unist-util-select";
 import { graphql } from "@octokit/graphql";
-import { fetchProjectBoard } from "./project-to-stories";
+import { fetchProjectBoard, findStoryIdInBody } from "./project-to-stories";
 import type { ProjectBoardItem } from "./project-to-stories";
 import stripIndent from "strip-indent";
 import { Logger, createMemoryLogger, ResultWithLogs, LogEntry } from "./types";
@@ -17,11 +17,12 @@ const md = unified().use(parse).use(gfm).use(remarkStringify, {
 });
 
 type SyncIssuesParam =
-    | {
-          __typename: "Issue" | "PullRequest" | "ProjectCard" | "DraftIssue";
-          id: string; 
-          state: "OPEN" | "CLOSED";
-      }
+    |
+    {
+        __typename: "Issue" | "PullRequest" | "ProjectCard" | "DraftIssue";
+        id: string;
+        state: "OPEN" | "CLOSED";
+    }
     | { __typename: "UpdateProjectCard"; id: string; title: string; body: string; state: "OPEN" | "CLOSED"; }
     | { __typename: "NewProjectCard"; columnId: string; title: string; body: string; }
     | { __typename: "UpdateDraftIssue"; id: string; title: string; body: string; state: "OPEN" | "CLOSED"; }
@@ -32,7 +33,7 @@ type SyncIssuesParam =
 export type SyncTaskItem = { state: "OPEN" | "CLOSED"; title: string; url?: string };
 
 export interface SyncToProjectOptions {
-    projectId?: string; 
+    projectId?: string;
     owner?: string;
     repo?: string;
     projectNumber?: number;
@@ -40,12 +41,42 @@ export interface SyncToProjectOptions {
     itemMapping?: (item: SyncTaskItem) => SyncTaskItem;
     includesNote?: boolean;
     logger?: Logger;
+    dryRun?: boolean;
 }
 
 export const syncIssues = async (queryParams: SyncIssuesParam[], options: SyncToProjectOptions): Promise<void> => {
     const logger = options.logger || console;
     if (queryParams.length === 0) {
         logger.info("No issues to sync.");
+        return;
+    }
+
+    if (options.dryRun) {
+        for (const p of queryParams) {
+            if (p.__typename === "NewDraftIssue") {
+                logger.info(`Plan: Create DraftIssue "${p.title}". Body: ${p.body}`);
+            } else if (p.__typename === "UpdateDraftIssue") {
+                logger.info(`Plan: Update DraftIssue "${p.id}" state=${p.state}`);
+            } else if (p.__typename === "DeleteDraftIssue") {
+                logger.info(`Plan: Delete DraftIssue "${p.id}"`);
+            } else if (p.__typename === "UpdateProjectItemField") {
+                const v = typeof p.value === "string" ? p.value : JSON.stringify(p.value);
+                logger.info(`Plan: Update Item Field itemId=${p.itemId} fieldId=${p.fieldId} value=${v}`);
+            } else if (p.__typename === "Issue") {
+                logger.info(`Plan: Update Issue "${p.id}" state=${p.state}`);
+            } else if (p.__typename === "PullRequest") {
+                logger.info(`Plan: Update PullRequest "${p.id}" state=${p.state}`);
+            } else if (p.__typename === "NewProjectCard") {
+                logger.info(`Plan: Create Project Card columnId=${p.columnId} title="${p.title}"`);
+            } else if (p.__typename === "UpdateProjectCard") {
+                logger.info(`Plan: Update Project Card "${p.id}" state=${p.state}`);
+            } else if (p.__typename === "ProjectCard") {
+                logger.info(`Plan: Update Project Card "${p.id}" state=${p.state}`);
+            } else {
+                logger.warn(`Unknown state: ${JSON.stringify(p)}`);
+            }
+        }
+        logger.info("Dry-run: no API calls performed.");
         return;
     }
     
@@ -152,7 +183,8 @@ export const syncIssues = async (queryParams: SyncIssuesParam[], options: SyncTo
             } else if (param.__typename === "ProjectCard") {
                 return `updateProjectCard${index}: updateProjectCard(input: { projectCardId: "${param.id}", isArchived: ${param.state !== "OPEN"} }) { clientMutationId }`;
             }
-            throw new Error("Unknown state:" + JSON.stringify(param));
+            logger.warn("Unknown state:" + JSON.stringify(param));
+            return "";
         }).filter(query => query !== "");
 
         const syncQuery = `mutation { ${queries.join("\n")} }`;
@@ -205,22 +237,25 @@ export const syncIssues = async (queryParams: SyncIssuesParam[], options: SyncTo
 };
 
 type TodoItem =
+    |
+    {
+        type: "ISSUE_PR";
+        state: "OPEN" | "CLOSED";
+        title: string;
+        body: string;
+        url: string;
+        status?: string;
+        storyId?: string;
+    }
     | {
-          type: "ISSUE_PR";
-          state: "OPEN" | "CLOSED";
-          title: string;
-          body: string;
-          url: string;
-          status?: string;
-      }
-    | {
-          type: "Note";
-          state: "OPEN" | "CLOSED";
-          title: string;
-          body: string;
-          url: undefined;
-          status?: string;
-      };
+        type: "Note";
+        state: "OPEN" | "CLOSED";
+        title: string;
+        body: string;
+        url: undefined;
+        status?: string;
+        storyId?: string;
+    };
 
 export const createSyncRequestObject = async (markdown: string, options: SyncToProjectOptions) => {
     const logger = options.logger || console;
@@ -231,13 +266,35 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
     const normalizeStatus = (status: string): string => {
         return status.toLowerCase().replace(/\s+/g, "");
     };
+
+    const normalizeTitleLine = (rawLine: string): string => {
+        const line = rawLine || "";
+        const storyMatch = line.match(/^\s*[-*+]\s*(?:\[[ x]\]\s*)?Story\s*[:\-]\s*(.+)$/i);
+        if (storyMatch) {
+            return storyMatch[1].trim();
+        }
+        let sanitized = line.trim();
+        sanitized = sanitized.replace(/^\s*[-*+]\s*/, "").trim();
+        sanitized = sanitized.replace(/^\[[x\s]\]\s*/i, "").trim();
+        if (/^Story\s*[:\-]/i.test(sanitized)) {
+            sanitized = sanitized.replace(/^Story\s*[:\-]\s*/i, "").trim();
+        }
+        return sanitized;
+    };
     
     const todoItems: TodoItem[] = listItems.map((item: any) => {
         const todoText = md.stringify(item);
         const lines = todoText.split(/\r?\n/);
-        const title = lines[0].replace(/^-\s+(?:\[[ x]\s+)?/, "");
-        const body = stripIndent(lines.slice(1).join("\n"));
+        const title = normalizeTitleLine(lines[0] || "");
+        const rawBody = stripIndent(lines.slice(1).join("\n"));
+        const body = rawBody.replace(/(^|\n)(\s*)story\s*id\s*:/gi, (_match, prefix, indent) => `${prefix}${indent}Story ID:`);
+        const storyId = findStoryIdInBody(body) || undefined;
         const url = item.children[0]?.children[0]?.url;
+        const finalTitle = title || (storyId ? body.split(/\r?\n/).map(line => line.trim()).filter(Boolean)[0] || "" : "");
+        if (!finalTitle) {
+            logger.warn(`Story with ID ${storyId || "unknown"} has empty title, skipping.`);
+            return null;
+        }
         let status: string | undefined;
         const itemPosition = item.position?.start?.line || 0;
         let closestHeading: any = null;
@@ -260,15 +317,17 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
             else if (normalizedHeading.includes("in review")) { status = "In review"; }
             else { status = headingText; }
         }
-        return { type: url ? "ISSUE_PR" : "Note", state: item.checked ? "CLOSED" : "OPEN", title: title, body: body, url: url, status: status } as TodoItem;
-    });
+        return { type: url ? "ISSUE_PR" : "Note", state: item.checked ? "CLOSED" : "OPEN", title: finalTitle, body: body, url: url, status: status, storyId: storyId } as TodoItem;
+    }).filter(Boolean) as TodoItem[];
 
     if (!options.projectId) {
         throw new Error("projectId is required to fetch project board");
     }
     const project = await fetchProjectBoard({ projectId: options.projectId, token: options.token });
     const needToUpdateItems: SyncIssuesParam[] = [];
-    const itemMapping = options.itemMapping ? options.itemMapping : (item: SyncTaskItem) => item;
+    let created = 0;
+    let skipped = 0;
+    let stories = 0;
     
     let statusField: any = null;
     if (options.projectId) {
@@ -282,109 +341,77 @@ export const createSyncRequestObject = async (markdown: string, options: SyncToP
     }
     
     const findProjectTodoItem = (todoItem: TodoItem): { columnId: string; item: ProjectBoardItem } | undefined => {
-        for (const column of project.columns) {
-            for (const columnItem of column.items) {
-                const syncTaskItem = itemMapping(todoItem);
-                if (!columnItem.id) {
-                    logger.warn(`Skipping item with missing ID for "${columnItem.title}"`);
-                    continue;
-                }
-                const syncTitle = syncTaskItem.title.replace(/^Story:\s*/, '').trim();
-                const itemTitle = columnItem.title.replace(/^Story:\s*/, '').trim();
-                if (syncTitle === itemTitle) {
-                    return { item: columnItem, columnId: column.id };
-                }
-                if (columnItem.storyId && syncTaskItem.url && syncTaskItem.url.includes(columnItem.storyId)) {
-                    return { item: columnItem, columnId: column.id };
-                }
-                if (syncTaskItem.url && columnItem.url && syncTaskItem.url === columnItem.url) {
-                    return { item: columnItem, columnId: column.id };
-                }
-            }
+        const allItems = project.columns.flatMap(c => c.items.map(item => ({ item, columnId: c.id })))
+
+        // 1. Match by storyId (highest priority)
+        if (todoItem.storyId) {
+            const found = allItems.find(({ item }) => item.storyId === todoItem.storyId);
+            if (found) return found;
         }
-        return;
+
+        // 2. Match by URL (fallback)
+        if (todoItem.url) {
+            const found = allItems.find(({ item }) => item.url === todoItem.url);
+            if (found) return found;
+        }
+
+        // 3. Match by exact title if no storyId and no URL
+        const title = (todoItem as any).title?.trim().toLowerCase();
+        if (title) {
+            const found = allItems.find(({ item }) => item.title?.trim().toLowerCase() === title);
+            if (found) return found;
+        }
+
+        return undefined;
     };
     
     for (const todoItem of todoItems) {
-        let projectItem = findProjectTodoItem(todoItem);
+        if (todoItem.storyId) { stories++; }
+        const projectItem = findProjectTodoItem(todoItem);
+
         if (projectItem) {
-            logger.info(`Found existing item for "${todoItem.title}": ${projectItem.item.id}`);
-        } else {
-            logger.info(`No existing item found for "${todoItem.title}"`);
+            // If an item with the same story ID/URL exists, skip it. md-to-project is add-only.
+            logger.info(`Skipping existing item found for "${todoItem.title}" (ID: ${projectItem.item.id})`);
+            if (todoItem.storyId) { skipped++; }
+            continue;
         }
 
-        if (!projectItem && options.projectId) {
-            logger.info(`Creating new draft issue for "${todoItem.title}"`);
+        // If no existing item is found, create a new one.
+        logger.info(`No existing item found for "${todoItem.title}", planning to create.`);
+        if (options.projectId) {
+            // ProjectV2: Create a new DraftIssue
             if (options.includesNote && (todoItem.state === "OPEN" || todoItem.state === "CLOSED")) {
                 needToUpdateItems.push({ __typename: "NewDraftIssue", projectId: options.projectId, title: todoItem.title, body: todoItem.body });
+                if (todoItem.storyId) { created++; }
+                // Also set the status if available
                 if (todoItem.status && statusField) {
                     const draftIssueIndex = needToUpdateItems.length - 1;
                     const statusOption = statusField.options.find((option: any) => normalizeStatus(option.name) === normalizeStatus(todoItem.status || ""));
                     if (statusOption) {
-                        needToUpdateItems.push({ __typename: "UpdateProjectItemField", projectId: options.projectId, itemId: `DRAFT_ISSUE_PLACEHOLDER_${draftIssueIndex}`, fieldId: statusField.id, value: { singleSelectOptionId: statusOption.id } });
+                        needToUpdateItems.push({
+                            __typename: "UpdateProjectItemField",
+                            projectId: options.projectId,
+                            itemId: `DRAFT_ISSUE_PLACEHOLDER_${draftIssueIndex}`,
+                            fieldId: statusField.id,
+                            value: { singleSelectOptionId: statusOption.id }
+                        });
                     }
                 }
             }
-            continue;
-        }
-        
-        if (!projectItem && !options.projectId) {
+        } else {
+            // Legacy Projects: Create a new ProjectCard (Note)
             if (options.includesNote && todoItem.type === "Note" && todoItem.state === "OPEN") {
                 needToUpdateItems.push({ __typename: "NewProjectCard", columnId: project.columns[0].id, title: todoItem.title, body: todoItem.body });
-            }
-            continue;
-        }
-        
-        if (projectItem && options.projectId) {
-            if (options.includesNote && todoItem.type === "Note") {
-                const isChangedContent = todoItem.body.trim() !== projectItem.item.body.trim();
-                const needToUpdateState = todoItem.state !== projectItem.item.state;
-                if (isChangedContent || needToUpdateState) {
-                    needToUpdateItems.push({ __typename: "UpdateDraftIssue", id: projectItem.item.id, title: todoItem.title, body: todoItem.body, state: todoItem.state });
-                }
-            }
-        }
-        
-        if (projectItem && !options.projectId) {
-            if (options.includesNote && todoItem.type === "Note") {
-                const isChangedContent = todoItem.body.trim() !== projectItem.item.body.trim();
-                if (isChangedContent) {
-                    needToUpdateItems.push({ __typename: "UpdateProjectCard", id: projectItem.item.id, title: todoItem.title, body: todoItem.body, state: todoItem.state });
-                    continue;
-                }
-            }
-        }
-        
-        if (projectItem) {
-            const needToUpdateItem = todoItem.state !== projectItem.item.state;
-            if (needToUpdateItem) {
-                if (options.projectId) {
-                    needToUpdateItems.push({ __typename: projectItem.item.__typename as "Issue" | "PullRequest" | "DraftIssue", id: projectItem.item.id, state: todoItem.state });
-                } else {
-                    needToUpdateItems.push({ __typename: projectItem.item.__typename as "Issue" | "PullRequest" | "ProjectCard", id: projectItem.item.id, state: todoItem.state });
-                }
-            }
-            
-            if (options.projectId && todoItem.status && statusField) {
-                if (todoItem.status !== projectItem.item.status) {
-                    const statusOption = statusField.options.find((option: any) => normalizeStatus(option.name) === normalizeStatus(todoItem.status || ""));
-                    if (statusOption) {
-                        logger.info(`Updating status for "${todoItem.title}" from "${projectItem.item.status}" to "${todoItem.status}"`);
-                        needToUpdateItems.push({ __typename: "UpdateProjectItemField", projectId: options.projectId, itemId: projectItem.item.projectItemId || projectItem.item.id, fieldId: statusField.id, value: { singleSelectOptionId: statusOption.id } });
-                    } else {
-                        logger.warn(`Status option not found for "${todoItem.status}". Available options:`, statusField.options.map((opt: any) => opt.name));
-                    }
-                } else {
-                    logger.debug(`Status unchanged for "${todoItem.title}": ${todoItem.status}`);
-                }
+                if (todoItem.storyId) { created++; }
             }
         }
     }
     
+    (createSyncRequestObject as any).lastStats = { created, skipped, stories };
     return needToUpdateItems;
 };
 
-export const syncToProject = async (markdown: string, options: SyncToProjectOptions): Promise<ResultWithLogs<{ success: boolean; errors: LogEntry[] }>> => {
+export const syncToProject = async (markdown: string, options: SyncToProjectOptions): Promise<ResultWithLogs<{ success: boolean; created: number; skipped: number; errors: LogEntry[] }>> => {
     const { logger: memoryLogger, getLogs } = createMemoryLogger();
     const logger = options.logger || console;
     const log = (level: LogEntry['level'], message: string, ...args: any[]) => {
@@ -399,11 +426,12 @@ export const syncToProject = async (markdown: string, options: SyncToProjectOpti
         log('info', 'Sync to project completed successfully.');
         const logs = getLogs();
         const errors = logs.filter(l => l.level === 'error');
-        return { result: { success: errors.length === 0, errors }, logs };
+        const stats = (createSyncRequestObject as any).lastStats || { created: 0, skipped: 0 };
+        return { result: { success: errors.length === 0, created: stats.created, skipped: stats.skipped, errors }, logs };
     } catch (error: any) {
         log('error', 'Failed to sync to project:', error);
         const logs = getLogs();
         const errors = logs.filter(l => l.level === 'error');
-        return { result: { success: false, errors }, logs };
+        return { result: { success: false, created: 0, skipped: 0, errors }, logs };
     }
 };
