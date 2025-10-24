@@ -11,5 +11,3 @@ In progress
 ### Description
 
 This is an in progress item for testing sync.
-
-

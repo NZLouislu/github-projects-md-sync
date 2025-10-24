@@ -11,5 +11,3 @@ In progress
 ### Description
 
 In progress item to ensure normalization matches.
-
-

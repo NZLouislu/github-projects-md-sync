@@ -23,5 +23,3 @@ Deprecate the old entry and provide rollback notes:
   - CI link-check; presence of deprecation & rollback sections
     E2E:
   - Runbook dry walkthrough validated
-
-

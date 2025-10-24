@@ -22,5 +22,3 @@ Standalone one-time tool (decoupled from the core importer):
   - Patch composition on sample docs; no side effects to importer
     E2E:
   - Operator applies patch and passes dry-run
-
-

@@ -23,5 +23,3 @@ Documentation readability & discoverability:
   - Lint/markdown-link-check; accessibility lint if applicable
     E2E:
   - Manual checklist for headings/anchors
-
-

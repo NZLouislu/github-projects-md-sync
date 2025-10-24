@@ -26,5 +26,3 @@ Verify the NPM package can be correctly installed and imported in various enviro
   - Script to create temporary project, install package, and attempt import.
     E2E:
   - Docker-based test running installation and basic usage in isolated environments.
-
-

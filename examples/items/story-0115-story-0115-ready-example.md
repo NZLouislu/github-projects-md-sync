@@ -12,5 +12,3 @@ Backlog
 
 Ready story example item for testing.
 Use this to ensure Ready header is recognized.
-
-

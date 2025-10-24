@@ -20,5 +20,3 @@ End-to-end testing (dry-run by default):
   E2E:
   - CI job executes dry-run across md→project & project→md
   - Optional manual job for live export (guarded by env)
-
-
