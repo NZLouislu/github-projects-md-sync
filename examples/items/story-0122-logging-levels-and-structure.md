@@ -25,5 +25,3 @@ Unify logging levels and structure:
   - Pipeline emits expected levels under scenarios
     E2E:
   - Logs readable and actionable in terminal
-
-

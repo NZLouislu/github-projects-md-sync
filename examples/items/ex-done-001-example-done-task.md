@@ -11,5 +11,3 @@ Done
 ### Description
 
 This is a completed item for testing sync.
-
-

@@ -11,5 +11,3 @@ Done
 ### Description
 
 Completed story to ensure Done status is parsed.
-
-

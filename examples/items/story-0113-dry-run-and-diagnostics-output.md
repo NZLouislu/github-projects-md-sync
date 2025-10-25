@@ -26,5 +26,3 @@ Provide --dry-run and unified diagnostics:
   - Full pipeline in dry-run prints accurate plan and diagnostics
     E2E:
   - Human-readable output validated on a sample doc
-
-

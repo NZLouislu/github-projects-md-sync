@@ -11,5 +11,3 @@ Ready
 ### Description
 
 This is a ready item for testing sync.
-
-

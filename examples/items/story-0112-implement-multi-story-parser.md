@@ -30,5 +30,3 @@ Parse multi-story markdown, core capabilities:
   - Mixed valid/invalid stories parsed into a deterministic result set with collected errors/warnings
     E2E (dry-run):
   - On a sample doc, print planned actions with no API calls; errors/warnings visible
-
-
