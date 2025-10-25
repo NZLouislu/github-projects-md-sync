@@ -6,6 +6,8 @@
 
 Sync GitHub Projects V2 with Markdown stories. Licensed under the MIT License.
 
+![Markdown Example](https://cdn.jsdelivr.net/gh/NZLouislu/github-projects-md-sync@main/images/github-projects-md-sync.png)
+
 ## Overview
 
 v0.1.11 introduces a safer, clearer sync model:
