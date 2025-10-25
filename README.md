@@ -1,7 +1,7 @@
 # GitHub Projects Markdown Sync
 
 [![npm version](https://img.shields.io/badge/npm-v0.1.11-orange.svg)](https://www.npmjs.com/package/github-projects-md-sync)
-[![MD Sync CI](https://github.com/nzlouislu/github-projects-md-sync/actions/workflows/sync-md-to-project.yml/badge.svg)](https://github.com/nzlouislu/github-projects-md-sync/actions/workflows/sync-md-to-project.yml)
+![MD Sync Series](https://img.shields.io/badge/MD%20Sync%20Series-NZLouis-2EA44F?logo=githubactions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Sync GitHub Projects V2 with Markdown stories. Licensed under the MIT License.
@@ -10,7 +10,7 @@ Sync GitHub Projects V2 with Markdown stories. Licensed under the MIT License.
 
 ## Overview
 
-v0.1.11 introduces a safer, clearer sync model:
+The latest release introduces a safer, clearer sync model:
 - Single entry for md→project with create-only enforcement
 - Separated formats: Multi-Story for import, Single-Story for export
 - Dry-run diagnostics for CI and previewing plans
@@ -62,7 +62,7 @@ PROJECT_ID=your_project_id
 ```bash
 npm run md -- stories/test-multi-stories-0.1.11.md
 ```
-- Optional dry-run plan: simulates the sync and prints the intended GitHub mutations without executing API writes.
+- Optional dry-run plan: simulates the sync and prints the intended GitHub mutations without executing API writes:
 ```bash
 npm run md -- stories/test-multi-stories-0.1.11.md --dry-run
 ```
@@ -219,7 +219,7 @@ $response.data.repository.projectsV2.nodes | Select-Object id, title
 
 ### mdToProject(projectId: string, githubToken: string, sourcePath: string)
 
-Sync markdown files from a directory to GitHub Project.
+Import Multi-Story markdown files from a directory into a GitHub Project. Create-only and idempotent by Story ID.
 
 - projectId: GitHub Project V2 ID
 - githubToken: GitHub personal access token
@@ -227,7 +227,7 @@ Sync markdown files from a directory to GitHub Project.
 
 ### projectToMd(projectId: string, githubToken: string, outputPath?: string)
 
-Export GitHub Project items to markdown files.
+Export GitHub Project items to Single-Story markdown files. Defaults to writing into `./stories` when no output path is provided.
 
 - projectId: GitHub Project V2 ID
 - githubToken: GitHub personal access token
@@ -407,16 +407,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npx ts-node examples/project-to-md.ts examples/items
 ```
-
-## API Reference
-
-### mdToProject(projectId: string, githubToken: string, sourcePath: string)
-
-Import Multi-Story Markdown files from a directory into a GitHub Project. Create-only, idempotent by Story ID.
-
-### projectToMd(projectId: string, githubToken: string, outputPath?: string)
-
-Export GitHub Project items to Single-Story Markdown files. Output directory defaults to `./stories` if not provided.
 
 ## Notes
 
